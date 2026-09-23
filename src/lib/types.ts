@@ -273,6 +273,8 @@ export interface Project {
   stage: ProjectStage;
   trackIds: TrackId[];
   description: string;
+  /** Why this project exists in the ladder - the capability it proves. */
+  why: string;
   difficulty: Difficulty;
   order: number;
   /** Lesson ids the learner should have passed before starting. */

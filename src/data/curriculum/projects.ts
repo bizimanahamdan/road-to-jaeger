@@ -1,3 +1,864 @@
-import type { Project } from '@/lib/types';
+import type { Project, ProjectMilestone, ProjectTask } from '@/lib/types';
 
-export const PROJECTS: Project[] = [];
+/**
+ * The project ladder.
+ *
+ * Lessons teach; projects prove. Every project here has tasks, milestones and -
+ * critically - acceptance criteria written as observable outcomes ("the robot
+ * completes 8 of 10 runs"), never as feelings ("you understand kinematics").
+ *
+ * The stages follow the progression stated in the Jaeger goal:
+ *   bench -> small robot -> arm -> autonomous robot -> advanced manipulator
+ *   -> small humanoid -> large subsystem -> large-scale research
+ *
+ * A learner who finishes every project in this file will have built, tested and
+ * documented a real machine at human scale, and will have done the analysis work
+ * that large-scale robotics actually requires. Nobody finishes this file with a
+ * Jaeger; the file says so where it matters.
+ */
+
+const T = (
+  id: string,
+  order: number,
+  estimatedMinutes: number,
+  title: string,
+  detail?: string,
+  milestoneId?: string,
+  requiresHardware = false,
+): ProjectTask => ({ id, order, estimatedMinutes, title, detail, milestoneId, requiresHardware });
+
+const M = (
+  id: string,
+  order: number,
+  title: string,
+  detail: string,
+  taskIds: string[],
+): ProjectMilestone => ({ id, order, title, detail, taskIds });
+
+export const PROJECTS: Project[] = [
+  /* ---------------------------------------------------------------------- */
+  /* STAGE 1 - bench                                                        */
+  /* ---------------------------------------------------------------------- */
+  {
+    id: 'prj-bench-measure',
+    name: 'Measurement Bench: A Data-Acquisition Rig You Trust',
+    stage: 'bench',
+    trackIds: ['foundation', 'electronics'],
+    order: 1,
+    difficulty: 'beginner',
+    description:
+      'Before you can build robots you have to be able to measure them. This project turns a cheap microcontroller and a laptop into a logged measurement rig: a sensor signal conditioned into the ADC range, sampled at a known rate, streamed over serial, plotted and saved. The deliverable is not the hardware - it is a set of calibration numbers you measured yourself, with uncertainties attached, that you will reuse in every later project.',
+    why:
+      'Almost every robotics failure that looks like a software bug is a measurement problem: an uncalibrated sensor, a sample rate nobody checked, an ADC range that clips. Building the rig first means every later project starts from numbers you trust.',
+    requiredSkills: ['math-03', 'phys-02', 'ee-05', 'py-04', 'py-06'],
+    materials: [
+      'Microcontroller dev board with USB (ESP32 or Arduino Uno class)',
+      'Breadboard, jumper wires, 10k and 1k resistors',
+      'One analogue sensor of your choice (thermistor, LDR, or a 3.3 V hall/pressure sensor)',
+      'Multimeter (any digital meter that measures DC voltage and resistance)',
+      'A reference you trust for calibration: kitchen thermometer, known resistors, or a ruler',
+      'USB cable and a laptop with Python 3.10+',
+    ],
+    estimatedCostUsd: 55,
+    requiresHardware: true,
+    tasks: [
+      T('bm-01', 1, 45, 'Write the requirement before touching hardware', 'One page: what quantity, what range, what resolution, what sample rate, what accuracy you need and why. State the units. Keep it - the last task compares reality against it.', 'bm-m1'),
+      T('bm-02', 2, 60, 'Characterise the sensor on the bench', 'Sweep the input across its range, record raw ADC counts and the reference measurement, and note where the response stops being linear. A photograph of the setup plus a table is enough.', 'bm-m1', true),
+      T('bm-03', 3, 45, 'Condition the signal into the ADC range', 'Design the divider/amplifier so the full-scale input maps to roughly 90% of the ADC range. Calculate the resistor values first, then measure what you actually got.', 'bm-m1', true),
+      T('bm-04', 4, 60, 'Sample at a known, verified rate', 'Stream timestamped samples over serial. Verify the claimed rate by counting samples over 10 seconds with a stopwatch, and by checking the timestamp deltas for jitter.', 'bm-m1', true),
+      T('bm-05', 5, 75, 'Fit a calibration curve and record residuals', 'In Python, fit a line (or polynomial if the sensor is genuinely nonlinear), then plot the residuals. Report the fit coefficients and the residual RMS in engineering units.', 'bm-m2'),
+      T('bm-06', 6, 45, 'Quantify the uncertainty honestly', 'Separate the error sources: sensor tolerance, ADC quantisation, reference accuracy, drift with temperature. Combine them into a single stated uncertainty and say which term dominates.', 'bm-m2'),
+      T('bm-07', 7, 60, 'Make the rig repeatable', 'Save runs to timestamped CSV/JSON with a header recording firmware version, sensor, gain and date. Write a short README describing how to reproduce a measurement.', 'bm-m2'),
+      T('bm-08', 8, 45, 'Filter the signal and prove it helps', 'Add a moving average or one-pole IIR filter. Plot raw versus filtered for the same run and show the noise reduction and the added lag you paid for it.', 'bm-m3'),
+      T('bm-09', 9, 60, 'Blind verification', 'Have the rig measure three known values you did not use in calibration, predict them first, then measure. Record predicted, measured and error.', 'bm-m3', true),
+      T('bm-10', 10, 45, 'Write up the bench note', 'Half a page: schematic, calibration equation, uncertainty, sample rate, known failure modes, and what you would change. This is the artefact later projects cite.', 'bm-m3'),
+    ],
+    milestones: [
+      M('bm-m1', 1, 'The rig produces data', 'Signal conditioned, sampled at a verified rate, streamed to the laptop.', ['bm-01', 'bm-02', 'bm-03', 'bm-04']),
+      M('bm-m2', 2, 'The rig produces calibrated data with a stated uncertainty', 'Calibration curve fitted, residuals plotted, uncertainty budget written.', ['bm-05', 'bm-06', 'bm-07']),
+      M('bm-m3', 3, 'The rig is trustworthy enough to build on', 'Filter characterised, blind checks pass within the stated uncertainty, bench note written.', ['bm-08', 'bm-09', 'bm-10']),
+    ],
+    acceptanceCriteria: [
+      'The rig samples at a rate you verified by two independent methods, and the two agree within 2%.',
+      'A calibration equation is recorded with units, plus the residual RMS in engineering units.',
+      'A written uncertainty budget exists and names its dominant term.',
+      'Three blind measurements fall within the stated uncertainty of their true values.',
+      'A one-page bench note lets someone else reproduce a measurement without asking you questions.',
+    ],
+    learningOutcomes: [
+      'Designs a signal-conditioning stage from an ADC range and a sensor output range.',
+      'Fits a calibration curve and interprets residuals rather than trusting a fit blindly.',
+      'Builds an uncertainty budget and identifies the dominant error source.',
+      'Verifies a claimed sample rate experimentally.',
+    ],
+  },
+  {
+    id: 'prj-bench-power',
+    name: 'Power and Motor-Driver Bench',
+    stage: 'bench',
+    trackIds: ['electronics', 'embedded'],
+    order: 2,
+    difficulty: 'intermediate',
+    description:
+      'A motor driver bench that survives being wrong. You will size a supply for a real load, build the protection that stops a stall from destroying the driver, measure what the driver actually dissipates, and characterise a motor: stall current, free-run current, speed versus PWM duty, and back-EMF constant. The output is a motor datasheet you measured yourself.',
+    why:
+      'Motor drive is where hobby projects die: undersupplies that brown out, missing flyback diodes, drivers that thermally shut down under a load they were "rated" for. Measuring the real numbers once prevents a class of failure that otherwise costs you weeks later.',
+    requiredSkills: ['ee-03', 'ee-08', 'ee-10', 'ee-11', 'ee-12', 'mcu-04'],
+    materials: [
+      'DC gear motor with an encoder, or a hobby servo you can back-drive',
+      'H-bridge driver board rated above your motor stall current (e.g. TB6612, DRV8833, or a MOSFET half-bridge you build)',
+      'Bench supply or a battery pack plus a current-limited supply',
+      'Multimeter, plus a small shunt resistor (0.1 ohm, 2 W) for current measurement',
+      'Flyback diodes (1N400x or Schottky), decoupling capacitors (100 nF + 100-470 uF)',
+      'Microcontroller dev board, jumper wires, heat sink if the driver gets hot',
+    ],
+    estimatedCostUsd: 80,
+    requiresHardware: true,
+    tasks: [
+      T('bp-01', 1, 60, 'Size the supply from the load', 'Measure or look up stall current, compute worst-case power including driver loss, and choose a supply with headroom. Write the arithmetic down; a supply that only meets the average is a supply that browns out.', 'bp-m1', true),
+      T('bp-02', 2, 45, 'Build the protection before the power', 'Flyback diodes on every inductive load, bulk and local decoupling, a fuse or current limit, and reverse-polarity protection. Draw the schematic and label every protective component with the failure it prevents.', 'bp-m1', true),
+      T('bp-03', 3, 60, 'Measure current with a shunt', 'Put a known shunt in series, measure the voltage across it, and reconstruct current. Cross-check against the supply display. Record both and explain any disagreement.', 'bp-m1', true),
+      T('bp-04', 4, 75, 'Characterise the motor', 'Measure stall current (briefly, with a current limit), free-run current at several voltages, and speed versus PWM duty across the range. Plot speed against duty and identify the dead zone.', 'bp-m2', true),
+      T('bp-05', 5, 45, 'Extract the motor constants', 'From your data compute the back-EMF constant, the approximate winding resistance and the no-load loss. Compare with the manufacturer numbers if they exist.', 'bp-m2'),
+      T('bp-06', 6, 60, 'Find the thermal limit', 'Run the motor at a fixed duty for 10 minutes and record driver and motor temperature over time (thermocouple, IR thermometer, or a thermistor glued to the case). Determine the continuous duty the driver can actually sustain.', 'bp-m2', true),
+      T('bp-07', 7, 45, 'Provoke a fault on purpose', 'Stall the motor, short the output (current-limited), and reverse the supply with protection removed in a controlled test if safe. Document what failed, what saved you, and what you changed afterwards.', 'bp-m3', true),
+      T('bp-08', 8, 60, 'Close the loop on speed', 'Use the encoder to run a simple proportional speed controller. Log a step response and report rise time, overshoot and steady-state error at two gains.', 'bp-m3', true),
+      T('bp-09', 9, 45, 'Write the motor datasheet', 'One page: constants, current/duty curves, continuous and peak ratings, thermal limit, known quirks. This datasheet gets reused by the rover project.', 'bp-m3'),
+    ],
+    milestones: [
+      M('bp-m1', 1, 'Power is safe and measured', 'Supply sized with headroom, protection installed and annotated, current measured with a shunt.', ['bp-01', 'bp-02', 'bp-03']),
+      M('bp-m2', 2, 'The motor is characterised', 'Constants extracted from measured data and the thermal continuous rating established.', ['bp-04', 'bp-05', 'bp-06']),
+      M('bp-m3', 3, 'The bench survives faults and closes a loop', 'Fault tests documented, speed loop demonstrated with logged step responses, datasheet written.', ['bp-07', 'bp-08', 'bp-09']),
+    ],
+    acceptanceCriteria: [
+      'Every inductive load has documented protection, and the schematic says which failure each component prevents.',
+      'Motor constants (Ke, winding resistance, no-load current) are computed from your own measurements.',
+      'A continuous duty rating is established from a timed thermal run, not copied from a datasheet.',
+      'At least one deliberate fault is provoked and its consequence documented.',
+      'A closed-loop speed step response is logged with rise time and overshoot reported at two gains.',
+    ],
+    learningOutcomes: [
+      'Sizes a supply and driver from measured load data with headroom for transients.',
+      'Installs and justifies flyback, decoupling, fusing and reverse-polarity protection.',
+      'Measures current with a shunt and reconciles it against instrument readings.',
+      'Extracts motor constants and thermal limits experimentally.',
+    ],
+  },
+  {
+    id: 'prj-bench-firmware',
+    name: 'Firmware You Can Ship: Logger, Watchdog, Release',
+    stage: 'bench',
+    trackIds: ['embedded', 'software'],
+    order: 3,
+    difficulty: 'intermediate',
+    description:
+      'A firmware project where the deliverable is robustness rather than a feature. You build a logging node with a non-blocking architecture, a state machine, a watchdog, a defined safe state, versioned releases and a build that a stranger can reproduce from a clean checkout.',
+    why:
+      'The gap between "it works on my desk" and "it works unattended for a week" is the gap between a hobbyist and an embedded engineer. Every later project depends on firmware that recovers from faults without you unplugging it.',
+    requiredSkills: ['mcu-02', 'mcu-06', 'mcu-09', 'cc-03', 'emb-03', 'emb-04'],
+    materials: [
+      'Microcontroller dev board (ESP32, RP2040 or STM32 class)',
+      'One sensor over I2C or SPI, plus an LED or buzzer for status',
+      'microSD module or a flash chip if you want durable storage (optional)',
+      'USB cable, a Git host account, and a C/C++ toolchain',
+    ],
+    estimatedCostUsd: 40,
+    requiresHardware: true,
+    tasks: [
+      T('bf-01', 1, 45, 'Design the architecture on paper', 'Draw the modules, the data flow and the tick budget. Decide what runs in the main loop, what runs in an ISR and what runs on a timer. No code yet.', 'bf-m1'),
+      T('bf-02', 2, 60, 'Build the non-blocking main loop', 'No delay() anywhere on the hot path. Implement a time-based scheduler or cooperative state machine and prove it by toggling an LED at a rate that stays correct while the sensor is being read.', 'bf-m1', true),
+      T('bf-03', 3, 60, 'Read the sensor defensively', 'Handle I2C/SPI failures, out-of-range values and stuck readings. Every failure path logs a distinct error code and keeps running.', 'bf-m1', true),
+      T('bf-04', 4, 45, 'Define the safe state and reach it deliberately', 'Write down what the device does when confused, then implement it: outputs off, error signalled, log flushed. Trigger it on purpose from a test hook.', 'bf-m2', true),
+      T('bf-05', 5, 60, 'Add a watchdog and a heartbeat', 'Enable the hardware watchdog, feed it only from a path that proves the loop is healthy, and verify recovery by hanging the firmware deliberately.', 'bf-m2', true),
+      T('bf-06', 6, 45, 'Log in a format you can analyse', 'Fixed-width or CSV lines over serial with a boot counter and a reset-reason field. Log enough to reconstruct what happened, not so much that you drown.', 'bf-m2'),
+      T('bf-07', 7, 60, 'Reproducible build and release process', 'Commit the toolchain config, pin dependency versions, tag a release, and produce an artefact whose checksum is recorded. A clean clone must build bit-for-bit or you document why not.', 'bf-m3'),
+      T('bf-08', 8, 45, 'Soak test it', 'Run the firmware for 24 hours unattended. Count resets, log dropouts and sensor failures. Report the uptime percentage and every anomaly you can explain.', 'bf-m3', true),
+      T('bf-09', 9, 45, 'Write the fault-injection report', 'List each fault you injected (bus hang, sensor removal, brown-out, watchdog trip), what the firmware did, and whether that matched the design.', 'bf-m3'),
+    ],
+    milestones: [
+      M('bf-m1', 1, 'The architecture holds under load', 'Non-blocking loop, defensive sensor reads, documented module boundaries.', ['bf-01', 'bf-02', 'bf-03']),
+      M('bf-m2', 2, 'The device recovers from faults', 'Safe state implemented, watchdog verified, logs sufficient to reconstruct a failure.', ['bf-04', 'bf-05', 'bf-06']),
+      M('bf-m3', 3, 'The firmware is releasable', 'Reproducible build, tagged release, 24-hour soak completed, fault-injection report written.', ['bf-07', 'bf-08', 'bf-09']),
+    ],
+    acceptanceCriteria: [
+      'No blocking delay exists on the main path, demonstrated by a timing-critical output staying correct during sensor reads.',
+      'Every sensor failure mode tested produces a distinct logged error and continued operation.',
+      'A deliberately hung firmware recovers via watchdog, and the reset reason appears in the log.',
+      'A clean checkout builds and produces a tagged, checksummed artefact.',
+      'A 24-hour soak report exists with an uptime figure and an explanation for every anomaly.',
+    ],
+    learningOutcomes: [
+      'Structures firmware as non-blocking modules with an explicit tick budget.',
+      'Implements and verifies a watchdog plus a defined safe state.',
+      'Designs log formats that support post-mortem analysis.',
+      'Runs a reproducible build, tagging and release process.',
+    ],
+  },
+
+  /* ---------------------------------------------------------------------- */
+  /* STAGE 2 - small robot                                                  */
+  /* ---------------------------------------------------------------------- */
+  {
+    id: 'prj-rover-chassis',
+    name: 'Differential-Drive Rover: Chassis, Drivetrain, Odometry',
+    stage: 'small-robot',
+    trackIds: ['mechanical', 'cad', 'control', 'robotics'],
+    order: 4,
+    difficulty: 'intermediate',
+    description:
+      'Your first complete robot: a two-wheel differential-drive platform with a designed chassis, motor selection justified by a torque budget, wheel odometry calibrated against a tape measure, and closed-loop speed control. It is deliberately simple so that every subsystem can be understood, measured and documented.',
+    why:
+      'Every mobile robot project in this curriculum builds on a platform whose kinematics, power budget and odometry error you have measured. Buying a kit skips the part that teaches you the most: justifying a motor choice with arithmetic and finding out how wrong your odometry is.',
+    requiredSkills: ['math-13', 'phys-09', 'phys-13', 'mech-07', 'mech-08', 'cad-02', 'rob-06', 'ctl-03'],
+    materials: [
+      'Two DC gear motors with encoders (from your motor bench datasheet if you did it)',
+      'Motor driver rated for the stall current of both motors together',
+      'Wheels, motor mounts, caster or skid point',
+      'Chassis: 3 mm aluminium plate, laser-cut acrylic, or printed PETG',
+      'Microcontroller plus IMU (optional but useful for odometry comparison)',
+      'Battery pack sized from your measured currents, plus connector and fuse',
+      'Tape measure, marker tape for the floor, calipers if available',
+    ],
+    estimatedCostUsd: 160,
+    requiresHardware: true,
+    tasks: [
+      T('rc-01', 1, 60, 'Write the requirement and the mass budget', 'Payload, top speed, climb, runtime and floor type. Then a mass table for every part with a margin, because the mass budget decides the motor.', 'rc-m1'),
+      T('rc-02', 2, 75, 'Size the motors from the load', 'Compute rolling resistance and the torque needed to accelerate the total mass to target speed in target time, plus any incline. Select a motor and gear ratio that meets peak AND continuous torque. Show the arithmetic.', 'rc-m1'),
+      T('rc-03', 3, 45, 'Check the power budget and runtime', 'From measured currents, compute the supply capacity needed for your target runtime and the wire/connector current rating. Include driver losses.', 'rc-m1'),
+      T('rc-04', 4, 90, 'Model the chassis in CAD', 'Parametric sketch, motor mounts, sensor mounting points, and a mass-properties check against your mass budget. Export for printing or cutting.', 'rc-m1'),
+      T('rc-05', 5, 90, 'Build the platform', 'Cut/print, assemble, wire. Photograph each stage. Record deviations from CAD and why - this list is gold the second time round.', 'rc-m2', true),
+      T('rc-06', 6, 60, 'Drive it open loop and characterise it', 'Command a fixed PWM to each wheel, measure speed and current, and observe the asymmetry between left and right. Quantify the difference.', 'rc-m2', true),
+      T('rc-07', 7, 75, 'Close the speed loops', 'Per-wheel PID on encoder feedback. Log step responses, tune, and report steady-state error and overshoot. Then hold a straight line with two independent loops.', 'rc-m2', true),
+      T('rc-08', 8, 60, 'Implement and calibrate odometry', 'Differential-drive odometry from encoder counts. Calibrate wheel diameter and track width by driving known distances and rotations, and report the residual error per metre and per radian.', 'rc-m3', true),
+      T('rc-09', 9, 45, 'Measure odometry drift honestly', 'Run a 10 m loop and a set of 360-degree rotations. Plot estimated versus measured pose and state the drift rate. Compare against IMU heading if you have one.', 'rc-m3', true),
+      T('rc-10', 10, 60, 'Add a command interface and safe state', 'Serial or Bluetooth command protocol with velocity commands, a heartbeat timeout that stops the motors, and a battery-voltage cutoff. Document the protocol.', 'rc-m3', true),
+      T('rc-11', 11, 45, 'Write the platform manual', 'Wiring diagram, pinout, motor constants, odometry calibration values, command protocol, known faults. Another person should be able to drive it from this document alone.', 'rc-m3'),
+    ],
+    milestones: [
+      M('rc-m1', 1, 'The design is justified on paper', 'Requirement, mass budget, motor sizing arithmetic and CAD model complete.', ['rc-01', 'rc-02', 'rc-03', 'rc-04']),
+      M('rc-m2', 2, 'It drives and holds a line', 'Platform built, open-loop asymmetry measured, closed-loop speed control demonstrated with logged step responses.', ['rc-05', 'rc-06', 'rc-07']),
+      M('rc-m3', 3, 'It knows roughly where it is and can be commanded safely', 'Calibrated odometry with a stated drift rate, command protocol with timeouts, platform manual written.', ['rc-08', 'rc-09', 'rc-10', 'rc-11']),
+    ],
+    acceptanceCriteria: [
+      'Motor and gear selection is justified by a written torque and power calculation, including a continuous-duty check.',
+      'The rover holds a straight line for 3 m with lateral deviation under a threshold you set before testing.',
+      'Wheel diameter and track width are calibrated, with residual odometry error reported per metre and per radian.',
+      'A heartbeat timeout stops the motors within one control cycle of the last command, demonstrated on video or in logs.',
+      'A platform manual exists covering wiring, constants, protocol and known faults.',
+    ],
+    learningOutcomes: [
+      'Selects motors and gear ratios from a computed torque and power budget.',
+      'Models a mobile robot chassis with mass properties in CAD.',
+      'Tunes per-wheel PID controllers and reports step-response metrics.',
+      'Implements differential-drive odometry and quantifies its drift.',
+    ],
+  },
+  {
+    id: 'prj-obstacle-bot',
+    name: 'Obstacle-Avoiding Robot',
+    stage: 'small-robot',
+    trackIds: ['robotics', 'embedded', 'control', 'ai-robotics'],
+    order: 5,
+    difficulty: 'intermediate',
+    description:
+      'The classic first autonomous robot, done properly. A rover with at least three distance sensors that detects obstacles, decides what to do, and does it repeatably - with sensor characterisation, a fusion step, a documented behaviour state machine, hysteresis so it does not chatter, a safe fallback when sensors fail, and a verification campaign of many runs rather than one lucky demo.',
+    why:
+      'This is the smallest project that contains the whole autonomy stack: sensing, estimation, decision, actuation, safety and verification. It is also where most learners discover that the hard part is not the algorithm - it is that one sensor lies in sunlight, another has a 6 cm blind spot, and the third needs 40 ms that the control loop does not have.',
+    requiredSkills: ['mcu-03', 'mcu-06', 'mcu-07', 'ee-12', 'per-01', 'rob-01', 'rob-06', 'ctl-03'],
+    materials: [
+      'The differential-drive rover from the previous project (or a two-motor chassis kit)',
+      'Three or more distance sensors: HC-SR04 ultrasonic, VL53L0X/VL53L1X ToF, or an IR rangefinder',
+      'Optional: a low-cost 2D LiDAR or a camera if you plan to extend this project later',
+      'Servo or a fixed multi-sensor mount with known angles (a printed bracket is ideal)',
+      'Microcontroller with enough free timers/GPIO for all sensors',
+      'Obstacles: boxes, chairs, a wall, a low object under 10 cm tall, a dark object, a shiny object',
+      'Tape measure, floor tape, and a phone or camera for recording runs',
+    ],
+    estimatedCostUsd: 120,
+    requiresHardware: true,
+    tasks: [
+      T('ob-01', 1, 45, 'Define the mission and the failure modes', 'Write the requirement: obstacle size range, speed, floor, lighting, what counts as success and what counts as a collision. List the ways it could fail before you build it.', 'ob-m1'),
+      T('ob-02', 2, 75, 'Characterise every sensor individually', 'For each sensor: range, blind spot, beam width, update rate, and error versus distance on a flat target. Then test the awkward cases - dark matte, shiny metal, angled surface, thin pole, low object.', 'ob-m2', true),
+      T('ob-03', 3, 60, 'Design the sensor geometry', 'Decide mounting angles and heights from the beam widths and blind spots you measured, and draw the resulting coverage map. Identify the gap you cannot cover and say what you will do about it.', 'ob-m2'),
+      T('ob-04', 4, 75, 'Read all sensors without blocking', 'Non-blocking driver for each sensor type, with a per-sensor freshness timestamp and a validity flag. Prove the loop period stays constant while every sensor is being read.', 'ob-m2', true),
+      T('ob-05', 5, 60, 'Fuse the readings into one picture', 'Combine readings into an occupancy estimate around the robot (sectors with min/median distance). Reject outliers and stale values, and handle disagreement between sensors explicitly.', 'ob-m3', true),
+      T('ob-06', 6, 90, 'Implement the avoidance behaviours as a state machine', 'CRUISE, SLOW, AVOID (turn away from the occupied sector), REVERSE-AND-TURN, STUCK, SAFE_STOP. Every transition needs an entry condition and an exit condition.', 'ob-m3', true),
+      T('ob-07', 7, 45, 'Add hysteresis so it stops chattering', 'Separate trigger and release thresholds for every transition, plus a minimum dwell time per state. Log the state trace and show that chatter is gone.', 'ob-m3', true),
+      T('ob-08', 8, 60, 'Close the loop on motion', 'Convert the chosen behaviour into wheel velocities and run them through the rover PID loops. Verify commanded versus achieved speed, especially during turns.', 'ob-m3', true),
+      T('ob-09', 9, 45, 'Handle sensor failure safely', 'Define what happens when a sensor returns no echo, an out-of-range value, or has not updated for N cycles. Implement a degraded mode that slows down and eventually stops.', 'ob-m4', true),
+      T('ob-10', 10, 45, 'Add the e-stop and the timeout', 'A physical or software stop that cuts motor output within one loop period, plus a watchdog that stops the robot if the behaviour layer hangs.', 'ob-m4', true),
+      T('ob-11', 11, 90, 'Run the verification campaign', 'Ten runs minimum over a fixed course, plus targeted cases: low obstacle, dark obstacle, shiny obstacle, corner approach, narrow gap. Record success, collision, timeout and near-miss for each run.', 'ob-m4', true),
+      T('ob-12', 12, 60, 'Analyse the failures', 'For every failure, read the log and identify the cause: sensor, fusion, decision or motion. Fix the top two causes and re-run those cases. Report the before/after success rate.', 'ob-m4'),
+      T('ob-13', 13, 45, 'Write the test report', 'Course description, sensor coverage map, parameters, results table, failure analysis, and what the robot cannot do. Include the honest limitations.', 'ob-m4'),
+    ],
+    milestones: [
+      M('ob-m1', 1, 'The mission is defined', 'Requirement written with success criteria, obstacle classes and named failure modes.', ['ob-01']),
+      M('ob-m2', 2, 'The sensors are understood', 'Per-sensor characterisation, coverage geometry designed, non-blocking reads at a constant loop rate.', ['ob-02', 'ob-03', 'ob-04']),
+      M('ob-m3', 3, 'It avoids obstacles', 'Fusion, behaviour state machine with hysteresis, and motion control working together on the test course.', ['ob-05', 'ob-06', 'ob-07', 'ob-08']),
+      M('ob-m4', 4, 'It avoids obstacles repeatably and fails safely', 'Sensor-failure handling, e-stop and watchdog, ten-run verification campaign, failure analysis and written report.', ['ob-09', 'ob-10', 'ob-11', 'ob-12', 'ob-13']),
+    ],
+    acceptanceCriteria: [
+      'Each sensor has a measured range, blind spot, beam width and update rate, recorded before the avoidance code was written.',
+      'A coverage map exists and names the blind region that remains, with the mitigation for it.',
+      'The behaviour state machine has documented entry and exit conditions with hysteresis, and a logged state trace shows no chatter on a steady course.',
+      'The robot completes at least 8 of 10 runs of the standard course without contact.',
+      'Targeted cases are reported individually: low, dark, shiny, corner and narrow-gap obstacles.',
+      'A sensor failure or behaviour hang stops the robot within one control cycle, demonstrated by injecting the fault.',
+      'A test report states the success rate, the top failure causes and what the robot cannot do.',
+    ],
+    learningOutcomes: [
+      'Characterises range sensors including their blind spots and material-dependent errors.',
+      'Designs sensor placement from measured beam geometry rather than from aesthetics.',
+      'Fuses multiple noisy readings into a decision-ready occupancy estimate.',
+      'Implements a hysteresis-based behaviour state machine with a defined safe state.',
+      'Runs a verification campaign and analyses failures by subsystem.',
+    ],
+  },
+
+  /* ---------------------------------------------------------------------- */
+  /* STAGE 3 - robotic arm                                                  */
+  /* ---------------------------------------------------------------------- */
+  {
+    id: 'prj-arm-3dof',
+    name: '3-DOF Planar Arm: Kinematics, Workspace, Teleoperation',
+    stage: 'robotic-arm',
+    trackIds: ['robotics', 'cad', 'control', 'mechanical'],
+    order: 6,
+    difficulty: 'advanced',
+    description:
+      'A three-joint arm you design, build, model and control. You derive forward and inverse kinematics by hand, verify them against the physical arm, map the real workspace including the singular configuration, add joint limits and gravity compensation, and drive it with a teleop interface that cannot command an unsafe pose.',
+    why:
+      'Manipulation is where the maths stops being an abstraction. Forward kinematics you can verify with a ruler; inverse kinematics you can verify by touching a target; the Jacobian you can verify by watching the arm slow down near a singularity. There is no better place to make the theory physical.',
+    requiredSkills: ['math-15', 'math-16', 'madv-05', 'mech-06', 'mech-07', 'cad-03', 'rob-02', 'rob-03', 'rob-04', 'ctl-07'],
+    materials: [
+      'Three actuators: servos with position feedback, or DC motors with encoders and reduction',
+      'Two or three printed/machined links, bearings or bushings at each joint',
+      'Microcontroller with enough PWM channels, plus a power supply sized for stall',
+      'Teleop input: three potentiometers, a gamepad, or a 3D mouse',
+      'Ruler/tape measure, protractor or a printed angle gauge, calipers',
+      'Small end-effector: a gripper, a pen holder, or a pointer tip',
+    ],
+    estimatedCostUsd: 200,
+    requiresHardware: true,
+    tasks: [
+      T('ar-01', 1, 60, 'Specify the arm before designing it', 'Reach, payload, repeatability, speed, and joint type for each axis. Compute the worst-case joint torque from the payload at full extension and add a safety factor.', 'ar-m1'),
+      T('ar-02', 2, 60, 'Select actuators from that torque', 'Check peak and continuous torque, backlash, resolution and speed for each joint. Document why each actuator meets its joint requirement.', 'ar-m1'),
+      T('ar-03', 3, 90, 'Design the links and joints in CAD', 'Parametric links, joint assemblies with mates, interference check, and mass properties. Keep the distal links light - the torque budget depends on it.', 'ar-m1'),
+      T('ar-04', 4, 120, 'Build the arm', 'Print/machine, assemble, wire. Record backlash at each joint by measuring the input motion that produces no output motion.', 'ar-m2', true),
+      T('ar-05', 5, 75, 'Derive forward kinematics by hand', 'Homogeneous transforms for each link, multiplied out. Then implement it and verify at five poses by measuring the end-effector position with a ruler.', 'ar-m2'),
+      T('ar-06', 6, 75, 'Derive inverse kinematics and handle its ambiguities', 'Solve for the planar 3-DOF case analytically, identify elbow-up/elbow-down branches, and implement the branch you want with joint-limit checks.', 'ar-m2'),
+      T('ar-07', 7, 60, 'Map the workspace and find the singularity', 'Sweep reachable targets numerically and plot the workspace boundary. Locate the fully extended configuration and show the Jacobian determinant approaching zero.', 'ar-m3'),
+      T('ar-08', 8, 75, 'Move along a straight line in Cartesian space', 'Implement linear interpolation between two poses with joint-space resampling, and observe the joint velocities blow up near the workspace edge. Limit them.', 'ar-m3', true),
+      T('ar-09', 9, 60, 'Add gravity compensation', 'Compute the static joint torques from your CAD mass properties, feed them forward, and measure the reduction in steady-state droop at full extension.', 'ar-m3', true),
+      T('ar-10', 10, 75, 'Build the teleop interface', 'Command end-effector pose or joint angles from your input device, with rate limiting, joint-limit enforcement and a stop button. The interface must be incapable of commanding an out-of-limits pose.', 'ar-m4', true),
+      T('ar-11', 11, 60, 'Measure repeatability and accuracy', 'Command the same target 20 times and measure the spread (repeatability), then compare commanded versus measured positions across the workspace (accuracy). Report both, separately.', 'ar-m4', true),
+      T('ar-12', 12, 45, 'Write the arm manual', 'Kinematics equations, DH or transform table, joint limits, calibration procedure, known backlash and error figures, and the tasks the arm can and cannot do.', 'ar-m4'),
+    ],
+    milestones: [
+      M('ar-m1', 1, 'The arm is specified and justified', 'Torque budget, actuator selection and CAD model with mass properties.', ['ar-01', 'ar-02', 'ar-03']),
+      M('ar-m2', 2, 'The maths matches the metal', 'Arm built, forward and inverse kinematics verified against physical measurement.', ['ar-04', 'ar-05', 'ar-06']),
+      M('ar-m3', 3, 'It moves well, not just to a point', 'Workspace mapped, singularity identified, straight-line motion with velocity limits, gravity compensation measured.', ['ar-07', 'ar-08', 'ar-09']),
+      M('ar-m4', 4, 'It is usable and characterised', 'Safe teleop interface, repeatability and accuracy measured, manual written.', ['ar-10', 'ar-11', 'ar-12']),
+    ],
+    acceptanceCriteria: [
+      'Every joint actuator is justified by a written torque calculation with a stated safety factor.',
+      'Forward kinematics agrees with physical measurement at five poses within a stated tolerance.',
+      'Inverse kinematics reaches commanded targets inside the workspace, with joint limits enforced.',
+      'The singularity is identified numerically (Jacobian determinant) and demonstrated physically.',
+      'Gravity compensation reduces steady-state droop by a measured amount.',
+      'Repeatability and accuracy are reported as separate numbers with their measurement method.',
+    ],
+    learningOutcomes: [
+      'Derives forward kinematics with homogeneous transforms and verifies them physically.',
+      'Solves inverse kinematics for a planar arm and resolves branch ambiguity.',
+      'Uses the Jacobian to identify singularities and workspace limits.',
+      'Implements gravity feed-forward and measures its effect on droop.',
+      'Distinguishes repeatability from accuracy and measures both.',
+    ],
+  },
+  {
+    id: 'prj-arm-pick',
+    name: 'Vision-Servoed Pick and Place',
+    stage: 'robotic-arm',
+    trackIds: ['robotics', 'ai-robotics', 'control'],
+    order: 7,
+    difficulty: 'advanced',
+    description:
+      'Close the loop between a camera and an arm: calibrate the camera, detect an object, transform its position into the arm frame, approach it, grasp it and place it - with the whole cycle timed, logged and measured over many trials. Includes a hand-eye calibration you perform yourself and an honest error budget for the cycle.',
+    why:
+      'Pick and place is the atom of industrial manipulation, and building one exposes the real difficulty: coordinate frames, calibration error, latency, and the fact that the last 5 mm cannot be solved by more maths, only by compliance or by better sensing.',
+    requiredSkills: ['per-02', 'per-03', 'per-04', 'madv-04', 'madv-05', 'rob-03', 'rob-04', 'ctl-07', 'ros-04'],
+    materials: [
+      'The 3-DOF (or more) arm from the previous project',
+      'A gripper: two-finger printed gripper with a servo, or a suction cup with a small vacuum pump',
+      'USB webcam or a camera module, with a rigid mount',
+      'A printed calibration target (checkerboard or ArUco/AprilTag markers)',
+      'Objects to pick: blocks of known size, in at least three colours or with distinct markers',
+      'A computer able to run OpenCV (a Raspberry Pi 4/5 or a laptop)',
+    ],
+    estimatedCostUsd: 150,
+    requiresHardware: true,
+    tasks: [
+      T('pp-01', 1, 60, 'Define the cycle and its success criteria', 'Object set, placement target, cycle time, and the success rate you are aiming for. Define what a failed grasp is.', 'pp-m1'),
+      T('pp-02', 2, 75, 'Calibrate the camera intrinsics', 'Capture a checkerboard from many poses, run calibration, and report the reprojection error. Reject images that make it worse and explain why.', 'pp-m2', true),
+      T('pp-03', 3, 75, 'Detect the objects robustly', 'Thresholding/contours or marker detection, with the failure cases tested: overlapping objects, partial occlusion, changed lighting, a rotated object.', 'pp-m2', true),
+      T('pp-04', 4, 60, 'Do the hand-eye calibration', 'Establish the transform from camera frame to arm base frame. Use a pointer tip at multiple poses or a marker on the end-effector, and report the residual error of the fit.', 'pp-m2', true),
+      T('pp-05', 5, 45, 'Build the error budget for the cycle', 'Combine camera pixel error, calibration residual, arm repeatability and gripper compliance into a predicted grasp-position uncertainty. Compare it with the object size to decide whether the plan is even viable.', 'pp-m3'),
+      T('pp-06', 6, 75, 'Implement the approach trajectory', 'Pre-grasp pose, approach along the last axis, grasp, retract, transfer, place, release. Use velocity limits and a joint-limit check at every waypoint.', 'pp-m3', true),
+      T('pp-07', 7, 60, 'Handle the last 5 mm', 'Add compliance or a correction step: a small visual servo update after the approach, or a mechanical funnel/passive compliance in the gripper. Measure how much it helps.', 'pp-m3', true),
+      T('pp-08', 8, 45, 'Detect grasp success', 'Use gripper position, motor current or a limit switch to tell a successful grasp from a miss, and recover from a miss instead of placing nothing.', 'pp-m4', true),
+      T('pp-09', 9, 90, 'Run the cycle 30 times', 'Randomise object positions within the workspace. Log per trial: detection success, commanded pose, measured pose, grasp success, placement error, cycle time.', 'pp-m4', true),
+      T('pp-10', 10, 60, 'Analyse and improve the top failure', 'Group failures by cause, fix the largest group, re-run 15 trials and report the improvement. Update the error budget with what you learned.', 'pp-m4'),
+      T('pp-11', 11, 45, 'Write the system report', 'Block diagram, frame tree, calibration procedure, error budget, results table, cycle time, limitations. Include the video or images of a successful cycle.', 'pp-m4'),
+    ],
+    milestones: [
+      M('pp-m1', 1, 'The cycle is specified', 'Objects, targets, success criteria and failure definition written down.', ['pp-01']),
+      M('pp-m2', 2, 'The camera is calibrated and the frames are connected', 'Intrinsics with reprojection error, robust detection, hand-eye transform with residual.', ['pp-02', 'pp-03', 'pp-04']),
+      M('pp-m3', 3, 'It picks things up', 'Error budget predicts viability, approach trajectory implemented, last-5 mm strategy measured.', ['pp-05', 'pp-06', 'pp-07']),
+      M('pp-m4', 4, 'It picks things up repeatably', 'Grasp detection and recovery, 30-trial campaign logged, top failure fixed and re-measured, report written.', ['pp-08', 'pp-09', 'pp-10', 'pp-11']),
+    ],
+    acceptanceCriteria: [
+      'Camera intrinsics are calibrated with a reported reprojection error, using your own capture set.',
+      'The camera-to-base transform is derived from your own hand-eye calibration with a stated residual.',
+      'A written error budget predicts grasp uncertainty before the campaign, and the measured spread agrees with it within a factor of two.',
+      'Detection is tested against at least four adversarial cases (occlusion, overlap, lighting, rotation).',
+      'Grasp success is detected automatically and a miss triggers recovery rather than an empty place.',
+      'At least 24 of 30 trials complete the full cycle successfully, with per-trial logs.',
+    ],
+    learningOutcomes: [
+      'Calibrates camera intrinsics and interprets reprojection error.',
+      'Performs hand-eye calibration and maintains a correct transform tree.',
+      'Builds an end-to-end error budget and uses it to judge design viability.',
+      'Implements grasp detection, recovery and a logged multi-trial evaluation.',
+    ],
+  },
+
+  /* ---------------------------------------------------------------------- */
+  /* STAGE 4 - autonomous robot                                             */
+  /* ---------------------------------------------------------------------- */
+  {
+    id: 'prj-auto-slam',
+    name: 'Map a Room: SLAM, Costmaps and Localised Navigation',
+    stage: 'autonomous-robot',
+    trackIds: ['ai-robotics', 'robotics'],
+    order: 8,
+    difficulty: 'advanced',
+    description:
+      'Take the rover from reactive avoidance to navigation. Build the ROS 2 stack: sensor drivers, odometry with TF, a SLAM node, a costmap-based local planner, and a goal interface. Then map a real space and prove the map is good by returning to a place you have already been.',
+    why:
+      'Autonomy is a systems problem, not an algorithm problem. This project teaches the parts that tutorials skip: TF trees that are wrong by a timestamp, odometry that drifts so the map smears, costmaps that are inflated to the wrong radius, and planners that succeed in simulation and fail on a carpet.',
+    requiredSkills: ['rob-06', 'rob-07', 'rob-08', 'ros-01', 'ros-02', 'ros-04', 'nav-02', 'nav-04', 'nav-06', 'nav-07'],
+    materials: [
+      'The differential-drive rover with working odometry and a command interface',
+      'A 2D LiDAR (RPLIDAR-class or a low-cost scan sensor), or a depth camera used as one',
+      'A single-board computer able to run ROS 2 (Raspberry Pi 4/5 class or better)',
+      'A second computer or laptop for RViz and ros2 CLI over WiFi',
+      'A room or corridor with enough structure to map, plus furniture to move around',
+      'Tape measure, and floor tape to mark goals',
+    ],
+    estimatedCostUsd: 350,
+    requiresHardware: true,
+    tasks: [
+      T('sl-01', 1, 60, 'Get ROS 2 running on the robot', 'Install the distro, build a workspace, run talker/listener across the network, and confirm latency between the robot and your laptop is acceptable.', 'sl-m1', true),
+      T('sl-02', 2, 75, 'Publish odometry and the TF tree', 'odom -> base_link from your calibrated odometry, base_link -> laser from the real mounting geometry, with correct timestamps and frame ids. Verify with tf2_echo.', 'sl-m1', true),
+      T('sl-03', 3, 60, 'Bring up the LiDAR driver', 'Publish LaserScan at the sensor rate, check for dropped scans and angle conventions (which way is 0 rad?), and confirm the scan matches the room when you rotate the robot by hand.', 'sl-m1', true),
+      T('sl-04', 4, 45, 'Tune the odometry before mapping', 'Recalibrate wheel parameters on the actual floor, measure drift over a 20 m loop, and record the covariance you will hand to the SLAM node.', 'sl-m1', true),
+      T('sl-05', 5, 90, 'Build a map with SLAM', 'Run a SLAM package, drive a slow careful loop, close it, and save the map. Then diagnose: where does the map smear, double walls or lose corners, and why?', 'sl-m2', true),
+      T('sl-06', 6, 60, 'Evaluate map quality quantitatively', 'Measure known wall lengths in the map against the tape measure, check corner squareness, and report the error per metre. Rebuild the map if the error is unacceptable.', 'sl-m2', true),
+      T('sl-07', 7, 75, 'Localise in the known map', 'Run AMCL or equivalent, initialise pose, and watch convergence. Measure how long initialisation takes and how often the particle cloud diverges when you push the robot.', 'sl-m2', true),
+      T('sl-08', 8, 75, 'Configure the costmaps and the planner', 'Set inflation radius from the robot footprint plus margin, choose observation sources and ranges, select a local planner, and log the plan for a simple goal.', 'sl-m3', true),
+      T('sl-09', 9, 60, 'Navigate to goals', 'Send goals from RViz or a CLI list, and observe recovery behaviour when blocked. Tune speed and acceleration limits so the robot does not lurch.', 'sl-m3', true),
+      T('sl-10', 10, 90, 'Run the navigation campaign', 'Ten goal runs across the room, including two through a doorway and one past a moved obstacle. Log per run: success, time, path length, minimum clearance, and any recovery used.', 'sl-m4', true),
+      T('sl-11', 11, 45, 'Simulate it too', 'Reproduce the same navigation in a simulator (Gazebo/Isaac/Webots) with your map, and compare behaviour to the real robot. Note at least three concrete sim-to-real differences.', 'sl-m4'),
+      T('sl-12', 12, 45, 'Write the navigation report', 'Architecture diagram, TF tree, parameters and why they were chosen, map quality figures, campaign results, and the known failure modes with their mitigations.', 'sl-m4'),
+    ],
+    milestones: [
+      M('sl-m1', 1, 'The robot is a ROS 2 system', 'Workspace running, TF tree correct and verified, LiDAR publishing, odometry tuned.', ['sl-01', 'sl-02', 'sl-03', 'sl-04']),
+      M('sl-m2', 2, 'It knows where it is', 'Map built and quantitatively evaluated, localisation converged and stress-tested.', ['sl-05', 'sl-06', 'sl-07']),
+      M('sl-m3', 3, 'It can go somewhere', 'Costmaps configured from the real footprint, planner producing logged plans, goals reached.', ['sl-08', 'sl-09']),
+      M('sl-m4', 4, 'It goes somewhere reliably', 'Ten-run campaign logged, simulation comparison done, report written.', ['sl-10', 'sl-11', 'sl-12']),
+    ],
+    acceptanceCriteria: [
+      'The TF tree is verified with tf2_echo and has correct timestamps, frame ids and mounting geometry.',
+      'Wheel odometry drift is measured over at least 20 m and the covariance handed to SLAM matches it.',
+      'A saved map reproduces measured wall lengths within an error you report per metre.',
+      'Localisation survives a deliberate push or a kidnapped-robot test, or its failure mode is documented.',
+      'Costmap inflation is derived from the measured footprint plus a stated margin.',
+      'At least 8 of 10 navigation goals are reached without collision, with per-run logs of time and minimum clearance.',
+      'Three concrete sim-to-real differences are documented from running the same scenario in simulation.',
+    ],
+    learningOutcomes: [
+      'Builds and verifies a ROS 2 TF tree and sensor pipeline.',
+      'Runs SLAM and evaluates map quality against physical measurements.',
+      'Configures costmaps and a local planner from real robot geometry.',
+      'Compares simulated and real navigation behaviour and explains the differences.',
+    ],
+  },
+  {
+    id: 'prj-auto-mission',
+    name: 'Autonomous Patrol Mission with Recovery Behaviours',
+    stage: 'autonomous-robot',
+    trackIds: ['ai-robotics', 'systems', 'robotics'],
+    order: 9,
+    difficulty: 'advanced',
+    description:
+      'Turn navigation into a mission: a sequence of waypoints, a task at each one (photograph, log a reading, wait for a condition), a supervisor that detects failure and recovers, and an end-of-mission report the robot writes itself. The engineering emphasis is on the systems side - requirements, state, failure handling and verification - because that is what makes autonomy usable rather than impressive.',
+    why:
+      'A robot that reaches a goal 80% of the time is a demo. A robot that reaches a goal, notices when it did not, recovers, and reports what happened is a system. This project builds the second one.',
+    requiredSkills: ['sys-01', 'sys-02', 'sys-03', 'nav-07', 'rob-01', 'rob-08', 'ros-03', 'ros-05', 'ros-06', 'per-08'],
+    materials: [
+      'The navigating rover from the SLAM project',
+      'A camera or sensor to perform the task at each waypoint',
+      'Battery monitoring (voltage divider or a smart battery) and a charger',
+      'A defined patrol area with at least four waypoints, some of which get blocked during testing',
+      'Logging storage and a way to retrieve logs (WiFi, SD card)',
+    ],
+    estimatedCostUsd: 120,
+    requiresHardware: true,
+    tasks: [
+      T('ms-01', 1, 60, 'Write the mission requirements', 'What the mission achieves, the waypoints, the task at each, the time budget, the abort conditions, and what "mission complete" means. Every requirement must be testable.', 'ms-m1'),
+      T('ms-02', 2, 75, 'Design the mission architecture', 'Nodes, interfaces, message types, and a state machine for the mission (IDLE, TRAVEL, TASK, RECOVER, ABORT, DONE). Draw it and identify every transition trigger.', 'ms-m1'),
+      T('ms-03', 3, 60, 'Implement the mission state machine', 'With explicit entry/exit actions, timeouts on every state, and no state that can be exited only by a human noticing something is wrong.', 'ms-m2', true),
+      T('ms-04', 4, 60, 'Implement the waypoint tasks', 'Whatever the mission needs at each stop: capture an image, read a sensor, hold position for N seconds. Each task reports success or failure with a reason.', 'ms-m2', true),
+      T('ms-05', 5, 75, 'Build the supervisor and recovery behaviours', 'Detect stuck, blocked, localisation loss, low battery and sensor failure. For each, define a recovery: retry, back up and replan, return to a safe point, or abort. Bound the retries.', 'ms-m2', true),
+      T('ms-06', 6, 45, 'Add power and time budgeting', 'Estimate mission energy from measured current, monitor it live, and abort or return home before the battery is empty. Verify the estimate against a real run.', 'ms-m3', true),
+      T('ms-07', 7, 60, 'Log everything and generate the report', 'Structured logs plus an auto-generated mission summary: waypoints visited, task results, recoveries used, distance, time, energy. The robot writes its own debrief.', 'ms-m3'),
+      T('ms-08', 8, 45, 'Unit-test the state machine off-robot', 'Drive the mission logic with simulated inputs in tests: blocked path, timeout, low battery. These tests must run without hardware.', 'ms-m3'),
+      T('ms-09', 9, 90, 'Run the mission with injected failures', 'Five full missions, and during each one inject a different failure: block a waypoint, move the robot, unplug a sensor, drain the battery low. Record what the robot did.', 'ms-m4', true),
+      T('ms-10', 10, 60, 'Analyse the recoveries', 'For each injected failure, compare the designed response with the actual response. Fix the mismatches and re-run those cases.', 'ms-m4'),
+      T('ms-11', 11, 45, 'Write the verification report', 'Requirements traceability (every requirement to the test that proves it), results, remaining gaps, and an honest list of what the mission cannot handle.', 'ms-m4'),
+    ],
+    milestones: [
+      M('ms-m1', 1, 'The mission is specified and designed', 'Testable requirements plus an architecture with a documented state machine.', ['ms-01', 'ms-02']),
+      M('ms-m2', 2, 'The mission runs and recovers', 'State machine, tasks and supervisor implemented with bounded retries.', ['ms-03', 'ms-04', 'ms-05']),
+      M('ms-m3', 3, 'The mission is measurable and testable', 'Energy and time budgeting verified, auto-generated report, hardware-free unit tests.', ['ms-06', 'ms-07', 'ms-08']),
+      M('ms-m4', 4, 'The mission survives being attacked', 'Five missions with injected failures, recovery analysis, verification report with traceability.', ['ms-09', 'ms-10', 'ms-11']),
+    ],
+    acceptanceCriteria: [
+      'Every mission requirement is testable and is traced to at least one test or run in the report.',
+      'The mission state machine has a timeout on every state, and no state requires human intervention to exit.',
+      'Each failure class has a defined recovery with a bounded retry count, demonstrated by injection.',
+      'The energy estimate agrees with measured consumption on a real mission within 20%.',
+      'The robot produces a machine-generated mission report at the end of every run.',
+      'Unit tests exercise the mission logic with no hardware present and run in CI or locally in under a minute.',
+    ],
+    learningOutcomes: [
+      'Writes testable requirements and traces them to verification evidence.',
+      'Designs a supervisory state machine with timeouts and bounded recovery.',
+      'Budgets mission energy and time from measured data.',
+      'Runs failure-injection campaigns and analyses designed versus actual responses.',
+    ],
+  },
+
+  /* ---------------------------------------------------------------------- */
+  /* STAGE 5 - advanced manipulator                                         */
+  /* ---------------------------------------------------------------------- */
+  {
+    id: 'prj-adv-force',
+    name: 'Force-Controlled Manipulation: Contact, Compliance, Impedance',
+    stage: 'advanced-manipulator',
+    trackIds: ['control', 'robotics', 'systems'],
+    order: 10,
+    difficulty: 'expert',
+    description:
+      'Make an arm do something that requires touching the world with a controlled force: wipe a surface, insert a peg into a hole with clearance, or press a probe against a part at a set force. You will model the contact, add force sensing or estimate force from current, implement an impedance or admittance controller, and prove the force stays inside a safe band during the task.',
+    why:
+      'Position control cannot do contact tasks: the arm either pushes too hard or loses contact. Force and impedance control is the standard industrial answer, and building one - even a crude one - is what separates people who have read about manipulation from people who have made it work.',
+    requiredSkills: ['madv-02', 'madv-04', 'ctl-05', 'ctl-06', 'ctl-08', 'rob-04', 'rob-05', 'sys-04', 'mat-02'],
+    materials: [
+      'A rigid arm of at least 3 DOF with torque or current sensing on the joints',
+      'A 1-axis or 3-axis force/torque sensor, or a load cell with an amplifier, or joint current sensing only',
+      'A compliant end-effector element (spring, foam, or a printed flexure)',
+      'A test rig: a plate to press against, a peg-and-hole pair with known clearance',
+      'A data acquisition path fast enough for the control loop (1 kHz where possible)',
+      'Safety: a hard force limit in hardware or firmware, and an e-stop within reach',
+    ],
+    estimatedCostUsd: 450,
+    requiresHardware: true,
+    tasks: [
+      T('fc-01', 1, 60, 'Define the contact task and its force limits', 'Choose one task, state the target force, the acceptable band, the maximum force that would damage the part or injure a person, and the approach speed.', 'fc-m1'),
+      T('fc-02', 2, 75, 'Do the hazard analysis', 'An FMEA of the contact task: what happens on sensor failure, controller instability, unexpected rigidity, and power loss mid-contact. Each gets a detection method and a mitigation.', 'fc-m1'),
+      T('fc-03', 3, 75, 'Model the contact', 'A spring-damper model of the environment plus the arm, and the resulting closed-loop behaviour. Derive the stability condition for your chosen impedance parameters before tuning anything.', 'fc-m1'),
+      T('fc-04', 4, 90, 'Get a force measurement you trust', 'Calibrate the sensor or the current-based estimate against known weights. Report noise, drift, resolution and the bandwidth you actually achieved.', 'fc-m2', true),
+      T('fc-05', 5, 75, 'Implement a hard force limit first', 'Before any fancy controller: if measured force exceeds the safety threshold, stop and retract. Verify it by pressing into a rigid stop deliberately.', 'fc-m2', true),
+      T('fc-06', 6, 90, 'Implement admittance or impedance control', 'Start with a single axis: force error drives a velocity correction (admittance) or a commanded position offset with virtual stiffness and damping (impedance). Log the force response to a step contact.', 'fc-m3', true),
+      T('fc-07', 7, 60, 'Tune against the stability condition', 'Vary stiffness and damping, record where oscillation starts, and compare with the stability boundary you derived. Explain any disagreement.', 'fc-m3', true),
+      T('fc-08', 8, 90, 'Do the task', 'Run the chosen contact task: peg insertion with search motion, surface following at constant force, or a press-and-hold. Log force, position and contact state throughout.', 'fc-m3', true),
+      T('fc-09', 9, 60, 'Measure task performance', 'Report force overshoot on initial contact, steady-state force error, time to complete, and success rate over at least 10 trials.', 'fc-m4', true),
+      T('fc-10', 10, 45, 'Test the failure modes from your FMEA', 'Inject each analysed failure where it is safe to do so and confirm the mitigation fires. Document anything that did not behave as predicted.', 'fc-m4', true),
+      T('fc-11', 11, 60, 'Extend to multi-axis (or explain why not)', 'Use the Jacobian to map force to joint space, or task-space control across two axes. If you stop at one axis, write the analysis of what multi-axis requires and why you stopped.', 'fc-m4'),
+      T('fc-12', 12, 45, 'Write the technical report', 'Task definition, hazard analysis, contact model, stability derivation, calibration, results, and limitations. This is the kind of document that gets read in an interview.', 'fc-m4'),
+    ],
+    milestones: [
+      M('fc-m1', 1, 'The task is safe on paper', 'Force limits defined, FMEA complete, contact model derived with a stability condition.', ['fc-01', 'fc-02', 'fc-03']),
+      M('fc-m2', 2, 'Force is measured and bounded', 'Calibrated force measurement plus a verified hard force limit that stops and retracts.', ['fc-04', 'fc-05']),
+      M('fc-m3', 3, 'The controller works in contact', 'Impedance or admittance control demonstrated, tuned against the derived stability boundary, task executed with logged data.', ['fc-06', 'fc-07', 'fc-08']),
+      M('fc-m4', 4, 'Performance is measured and failures are proven handled', 'Metrics over 10+ trials, FMEA failure injections tested, report written.', ['fc-09', 'fc-10', 'fc-11', 'fc-12']),
+    ],
+    acceptanceCriteria: [
+      'A written FMEA covers sensor failure, instability, unexpected rigidity and power loss, each with detection and mitigation.',
+      'A stability condition is derived before tuning, and the observed oscillation onset is compared against it.',
+      'The force measurement is calibrated against known weights with reported noise, drift and bandwidth.',
+      'A hard force limit stops and retracts the arm, demonstrated against a rigid stop.',
+      'On initial contact the force overshoot stays inside the band you specified in the first task.',
+      'Task success is reported over at least 10 trials with force, position and timing logs.',
+    ],
+    learningOutcomes: [
+      'Models contact dynamics and derives a stability condition for impedance control.',
+      'Calibrates force sensing or estimates force from joint current with a stated error.',
+      'Implements and tunes admittance/impedance control on a real arm.',
+      'Uses the Jacobian to map between task-space force and joint torque.',
+      'Applies FMEA-driven safety design to a contact task.',
+    ],
+  },
+
+  /* ---------------------------------------------------------------------- */
+  /* STAGE 6 - small humanoid                                               */
+  /* ---------------------------------------------------------------------- */
+  {
+    id: 'prj-hum-sim',
+    name: 'Bipedal Walking in Simulation: Gait, ZMP, Capture Point',
+    stage: 'small-humanoid',
+    trackIds: ['humanoid', 'control', 'ai-robotics'],
+    order: 11,
+    difficulty: 'expert',
+    description:
+      'A simulation-first humanoid project, because hardware at this stage costs thousands and teaches you less per dollar than the simulation does. You build or adapt a biped model, generate a dynamically stable gait with the linear inverted pendulum, track it with a whole-body or joint controller, implement push recovery via capture point, and evaluate everything with metrics rather than by watching it look nice.',
+    why:
+      'Walking is the cheapest place to learn the ideas that make humanoids hard: floating-base dynamics, underactuation, contact scheduling, ZMP stability and the difference between a trajectory and a controller. Doing it in simulation lets you run a thousand falls in an afternoon.',
+    requiredSkills: ['phys-12', 'phys-14', 'madv-02', 'madv-04', 'ctl-05', 'ctl-06', 'rob-05', 'rob-08', 'hum-01', 'hum-02', 'hum-04', 'hum-05'],
+    materials: [
+      'A computer able to run a physics simulator (MuJoCo, Gazebo, Webots, Isaac Sim or PyBullet)',
+      'Python with NumPy/SciPy and a solver for the QP (or a linear algebra library you write against)',
+      'An existing humanoid/biped URDF or MJCF model to adapt (many are freely available)',
+      'Version control for the model, controllers and experiment scripts',
+      'Optional: a gamepad for commanding walking velocity',
+    ],
+    estimatedCostUsd: 0,
+    requiresHardware: false,
+    tasks: [
+      T('hs-01', 1, 60, 'Get a biped model standing', 'Load or adapt a model, verify its mass properties, and hold it upright with a simple joint controller. Record the model mass, height and foot size - the gait maths depends on them.', 'hs-m1'),
+      T('hs-02', 2, 75, 'Compute the quantities that matter', 'Centre of mass, support polygon, ZMP from simulated contact forces. Plot them for a standing robot you nudge by hand and confirm the ZMP moves toward the polygon edge before it falls.', 'hs-m1'),
+      T('hs-03', 3, 90, 'Generate a LIPM gait', 'Implement the linear inverted pendulum: COM trajectory, footstep placement, ZMP reference inside the support polygon. Parameterise by step length, step time and walking velocity.', 'hs-m2'),
+      T('hs-04', 4, 90, 'Track the gait with a controller', 'Joint-space PD on the reference trajectories first, then a task-space or whole-body controller with contact constraints if you can. Log tracking error per joint.', 'hs-m2'),
+      T('hs-05', 5, 60, 'Make it walk without falling', 'Iterate on step timing, foot height, COM height and gains until the robot completes at least 20 steps. Record what change made the difference each time - this log is the real learning.', 'hs-m2'),
+      T('hs-06', 6, 75, 'Measure the gait quality', 'Metrics: ZMP margin, COM tracking error, energy per metre, foot slip, and time-to-fall under a range of commanded velocities. Report a table, not a video.', 'hs-m3'),
+      T('hs-07', 7, 75, 'Implement push recovery', 'Capture point or divergent component of motion: when pushed, choose a new footstep that recovers. Verify by applying measured impulses in several directions and reporting the recoverable impulse magnitude.', 'hs-m3'),
+      T('hs-08', 8, 60, 'Turn and change speed', 'Command yaw and velocity changes mid-walk. Report where the gait generator and the controller disagree, and how you handled it.', 'hs-m3'),
+      T('hs-09', 9, 60, 'Find the failure envelope', 'Sweep step length, step time, velocity, COM height and push magnitude to map where walking works and where it does not. Plot the boundary.', 'hs-m4'),
+      T('hs-10', 10, 45, 'Assess the sim-to-real gap honestly', 'List what the simulator gives you for free that hardware will not: perfect contact models, no backlash, no latency, no sensor noise, no actuator thermal limits. Quantify at least two of them.', 'hs-m4'),
+      T('hs-11', 11, 60, 'Reproduce one published result', 'Pick a short paper or a well-documented open-source gait, reproduce one figure or one claim, and write down where your result differs and why.', 'hs-m4'),
+      T('hs-12', 12, 45, 'Write the report and release the code', 'Model, gait generation, controller, metrics, failure envelope, reproduction notes. Tag a release and document how to rerun every experiment.', 'hs-m4'),
+    ],
+    milestones: [
+      M('hs-m1', 1, 'The model and its stability quantities are real', 'Biped standing under control, COM/support polygon/ZMP computed and validated by nudging.', ['hs-01', 'hs-02']),
+      M('hs-m2', 2, 'It walks', 'LIPM gait generated, tracked by a controller, at least 20 consecutive steps achieved with a tuning log.', ['hs-03', 'hs-04', 'hs-05']),
+      M('hs-m3', 3, 'Walking is measured and robust', 'Gait metrics reported, push recovery implemented and quantified, turning and speed changes working.', ['hs-06', 'hs-07', 'hs-08']),
+      M('hs-m4', 4, 'The result is scientific', 'Failure envelope mapped, sim-to-real gaps quantified, one published result reproduced, code released.', ['hs-09', 'hs-10', 'hs-11', 'hs-12']),
+    ],
+    acceptanceCriteria: [
+      'ZMP is computed from simulated contact forces and validated by showing it approaches the support polygon edge before a fall.',
+      'A parameterised LIPM gait produces at least 20 consecutive stable steps in simulation.',
+      'Gait quality is reported numerically: ZMP margin, tracking error, energy per metre and foot slip.',
+      'Push recovery is demonstrated with the recoverable impulse magnitude reported per direction.',
+      'A failure envelope is plotted across at least four parameters.',
+      'Two sim-to-real gaps are quantified rather than merely listed.',
+      'One figure or claim from a published source is reproduced, with differences explained.',
+    ],
+    learningOutcomes: [
+      'Computes COM, support polygon and ZMP for a floating-base robot.',
+      'Generates a dynamically stable LIPM gait and tracks it with a feedback controller.',
+      'Implements capture-point push recovery and quantifies its envelope.',
+      'Evaluates locomotion with metrics and maps the failure boundary.',
+      'Reproduces a published result and reports differences honestly.',
+    ],
+  },
+  {
+    id: 'prj-hum-hardware',
+    name: 'Small Physical Biped: Actuation, Integration and Honest Falls',
+    stage: 'small-humanoid',
+    trackIds: ['humanoid', 'mechanical', 'systems', 'large-robotics'],
+    order: 12,
+    difficulty: 'expert',
+    description:
+      'A small walking machine you can actually afford: 4-8 actuated joints, roughly knee-height or smaller, built to fall repeatedly without breaking. The point is not elegance - it is integration. Actuator selection justified by a torque budget, a leg structure with a stiffness check, wiring that survives motion, an IMU-based state estimator, and a test protocol that counts falls as data.',
+    why:
+      'Simulation teaches the theory; hardware teaches the constraints. The gap between them - backlash, compliance, mass you did not model, cables that fatigue, motors that overheat - is exactly what professional humanoid engineers spend their time on. A small physical biped is the cheapest way to learn it.',
+    requiredSkills: ['mat-02', 'mat-04', 'mech-05', 'mech-07', 'cad-05', 'emb-02', 'hum-03', 'hum-07', 'hum-08', 'lr-01', 'lr-03', 'sys-04', 'sys-06'],
+    materials: [
+      '4-8 actuators: high-torque serial bus servos, or brushed/BLDC motors with encoders and reduction',
+      'A bus interface or motor drivers, plus a microcontroller or SBC for the control loop',
+      'IMU (accelerometer + gyroscope) rigidly mounted on the torso',
+      'Leg and torso structure: printed PETG, laser-cut aluminium, or a mix; bearings where you can afford them',
+      'Battery sized from the measured stall current, with a regulator and a hard power cutoff',
+      'Strain-relief cable management, fasteners, and a soft landing surface (foam mat)',
+      'A gantry, tether or overhead support for early tests - strongly recommended',
+    ],
+    estimatedCostUsd: 700,
+    requiresHardware: true,
+    tasks: [
+      T('hb-01', 1, 75, 'Set the scale and the budget', 'Choose a size you can afford and iterate on. Compute the mass budget, the joint torque budget at the worst pose, and the cost of each iteration. Write down how many falls the structure must survive.', 'hb-m1'),
+      T('hb-02', 2, 75, 'Select actuators from the torque budget', 'Peak and continuous torque, speed, backlash, mass and cost for each joint. Justify each choice against the number from the previous task, and record the margin.', 'hb-m1'),
+      T('hb-03', 3, 90, 'Design the legs for stiffness, not just strength', 'Check deflection under body weight at full extension, check the joint brackets in bending, and keep the distal mass low. Model in CAD with mass properties, then print or cut.', 'hb-m1'),
+      T('hb-04', 4, 60, 'Design for falling', 'Choose impact-tolerant geometry, add compliance or sacrificial parts at the feet and knees, protect the electronics, and plan the tether. Falling is the test condition, not the accident.', 'hb-m2'),
+      T('hb-05', 5, 120, 'Build one leg first', 'Assemble, wire with strain relief, and test the single leg: joint range, backlash measured, position tracking, temperature after 10 minutes of motion.', 'hb-m2', true),
+      T('hb-06', 6, 90, 'Build the second leg and the torso', 'Match the first leg as closely as you can - measure the mass difference and the backlash difference, because asymmetry will show up in the gait.', 'hb-m2', true),
+      T('hb-07', 7, 75, 'Estimate attitude from the IMU', 'Complementary filter or EKF for roll/pitch, with the noise and drift you measured. Verify against a slow manual rotation and a known angle.', 'hb-m3', true),
+      T('hb-08', 8, 90, 'Make it stand', 'Balance the standing pose with ankle or hip strategy, using your attitude estimate. Start tethered. Report how long it can stand and what makes it fall.', 'hb-m3', true),
+      T('hb-09', 9, 120, 'Make it walk', 'Port or re-derive the gait, tune for the real machine, and iterate. Keep a tuning log: what you changed, what happened, what you concluded.', 'hb-m3', true),
+      T('hb-10', 10, 60, 'Instrument the falls', 'Log IMU, joint positions, currents and commands continuously. Define a fall from the data (attitude threshold or impact signature) and count falls automatically.', 'hb-m4'),
+      T('hb-11', 11, 90, 'Run the test campaign', 'Ten walking attempts minimum: steps taken before falling, distance, time, and the cause of each fall from the logs. Then fix the top cause and re-run.', 'hb-m4', true),
+      T('hb-12', 12, 60, 'Structural and electrical inspection after the campaign', 'Check for cracks, loosened fasteners, worn gears, chafed cables and heat damage. Record every degradation and the inspection interval it implies.', 'hb-m4', true),
+      T('hb-13', 13, 60, 'Write the integration report', 'As-built versus designed (mass, torque, backlash), the fall statistics with causes, what you would change in revision two, and a costed bill of materials.', 'hb-m4'),
+    ],
+    milestones: [
+      M('hb-m1', 1, 'The design is justified before it is built', 'Scale and budget set, actuators selected from a torque budget, legs checked for stiffness in CAD.', ['hb-01', 'hb-02', 'hb-03']),
+      M('hb-m2', 2, 'The hardware exists and is characterised', 'Fall-tolerant design, one leg built and measured, second leg and torso assembled with asymmetry quantified.', ['hb-04', 'hb-05', 'hb-06']),
+      M('hb-m3', 3, 'It stands, then it walks', 'IMU attitude estimate verified, standing balance demonstrated, walking achieved with a tuning log.', ['hb-07', 'hb-08', 'hb-09']),
+      M('hb-m4', 4, 'The falls are data', 'Automatic fall detection from logs, ten-attempt campaign with causes analysed, post-test inspection, integration report.', ['hb-10', 'hb-11', 'hb-12', 'hb-13']),
+    ],
+    acceptanceCriteria: [
+      'Every actuator choice is traced to a computed joint torque requirement with a stated margin.',
+      'Leg deflection under body weight at full extension is computed in CAD and confirmed by measurement.',
+      'As-built mass and backlash are measured and compared against the design values.',
+      'The IMU attitude estimate is verified against a known angle, with drift and noise reported.',
+      'The robot stands unassisted for a stated duration, or the reason it cannot is documented from logs.',
+      'Falls are detected automatically from logged data and counted, with a cause assigned to each.',
+      'A post-campaign inspection records structural and electrical degradation and sets an inspection interval.',
+    ],
+    learningOutcomes: [
+      'Selects actuators and structures from a torque budget and stiffness check.',
+      'Integrates IMU-based state estimation with joint control on real hardware.',
+      'Designs for repeated impact rather than for a single clean demonstration.',
+      'Turns falls into logged, counted, analysed data.',
+      'Reports as-built versus designed values and plans the next revision.',
+    ],
+  },
+
+  /* ---------------------------------------------------------------------- */
+  /* STAGE 7 - large subsystem                                              */
+  /* ---------------------------------------------------------------------- */
+  {
+    id: 'prj-large-actuator',
+    name: 'Actuator Test Cell and a Scaled Leg Structure',
+    stage: 'large-subsystem',
+    trackIds: ['large-robotics', 'mechanical', 'systems'],
+    order: 13,
+    difficulty: 'expert',
+    description:
+      'Build the thing that large robotics actually needs before it needs a robot: a test cell. You characterise an actuator (or a scaled actuator) under real load with real instrumentation, then build a structural leg member sized by your own buckling and stiffness analysis, load it in a controlled way, and compare prediction with measurement. The output is data that no datasheet gives you.',
+    why:
+      'At scale you cannot learn by building the whole machine - one iteration costs more than a car. You learn by testing subsystems to destruction, in a controlled way, with instruments. This project is the closest an individual can get to real large-robotics engineering without an institution behind them.',
+    requiredSkills: ['mat-02', 'mat-04', 'mech-02', 'mech-05', 'mech-08', 'phys-10', 'lr-01', 'lr-02', 'lr-03', 'lr-04', 'sys-03', 'sys-05'],
+    materials: [
+      'A test actuator: a high-torque electric actuator, a pneumatic cylinder, or a scaled hydraulic cylinder with a power unit',
+      'Load measurement: load cell plus amplifier, or a calibrated spring and displacement measurement',
+      'Displacement measurement: draw-wire encoder, linear potentiometer, or a dial indicator',
+      'Structural member: aluminium or steel tube of known section, plus end fixtures',
+      'A rigid test frame: welded steel, a heavy workbench with anchored fixtures, or a loading rig you design',
+      'Data acquisition: the measurement bench from project 1, at a rate high enough for the dynamics',
+      'Safety gear: eye protection, barriers or a stand-off distance, and a defined exclusion zone',
+    ],
+    estimatedCostUsd: 600,
+    requiresHardware: true,
+    tasks: [
+      T('at-01', 1, 60, 'Write the test plan before building the cell', 'What quantities, what range, what accuracy, what loading profile, and what you will do with the data. Include the hazard analysis for the test itself - stored energy, projectile risk, pinch points.', 'at-m1'),
+      T('at-02', 2, 75, 'Do the trade study for the test cell', 'At least three concepts (e.g. vertical loading frame, horizontal pull rig, lever-amplified rig) compared on cost, accuracy, safety and build time. Record the decision and its rationale.', 'at-m1'),
+      T('at-03', 3, 90, 'Design and build the frame', 'Stiffness of the frame matters: if the frame flexes, your displacement measurement is wrong. Compute frame deflection under load and make it an order of magnitude smaller than what you are measuring.', 'at-m2', true),
+      T('at-04', 4, 60, 'Calibrate the load path', 'Calibrate the load cell against known masses, check alignment (off-axis load corrupts everything), and quantify the friction in the rig by running it unloaded.', 'at-m2', true),
+      T('at-05', 5, 90, 'Characterise the actuator', 'Force/torque versus displacement across the range, speed versus load, current or pressure versus output, hysteresis on a load-unload cycle, and temperature rise over a duty cycle.', 'at-m3', true),
+      T('at-06', 6, 60, 'Find the actuator continuous rating', 'Run a repeated duty cycle until thermal steady state, and report the sustained output. Compare with the manufacturer rating and explain any difference.', 'at-m3', true),
+      T('at-07', 7, 75, 'Predict the leg member behaviour analytically', 'Choose a tube section, compute the Euler buckling load with the correct end-condition factor, the deflection under a lateral load, and the stress at the worst point. Include a safety factor argument.', 'at-m3'),
+      T('at-08', 8, 90, 'Test the leg member to the predicted limit', 'Load it incrementally, measuring displacement at each step, and stop before catastrophic failure unless the test is designed and protected for it. Record where the behaviour departs from linear.', 'at-m4', true),
+      T('at-09', 9, 60, 'Compare prediction with measurement', 'Plot predicted versus measured load-deflection, compute the error, and identify the cause: end conditions, initial curvature, frame compliance, material property variation. This comparison is the whole point.', 'at-m4'),
+      T('at-10', 10, 45, 'Scale the result', 'Apply the square-cube law to what you measured: what would the same design do at 2x and 5x scale? Show which quantities govern and where the design would have to change qualitatively.', 'at-m4'),
+      T('at-11', 11, 60, 'Write the test-cell manual and the data report', 'How to run a test safely, how to calibrate, the measured actuator data, the structural comparison, and the scaling analysis. Someone else must be able to repeat your test.', 'at-m4'),
+    ],
+    milestones: [
+      M('at-m1', 1, 'The test is planned and the concept chosen', 'Test plan with hazard analysis, three-concept trade study with a recorded decision.', ['at-01', 'at-02']),
+      M('at-m2', 2, 'The cell exists and is calibrated', 'Frame built with stiffness justified, load path calibrated, friction quantified.', ['at-03', 'at-04']),
+      M('at-m3', 3, 'The actuator is characterised', 'Force-displacement, speed-load, hysteresis, thermal steady-state continuous rating, plus the analytical prediction for the leg member.', ['at-05', 'at-06', 'at-07']),
+      M('at-m4', 4, 'Prediction meets measurement', 'Structural test run, error analysed and explained, scaling analysis done, manual and report written.', ['at-08', 'at-09', 'at-10', 'at-11']),
+    ],
+    acceptanceCriteria: [
+      'A written test plan with a hazard analysis exists before the cell is built.',
+      'Frame deflection is computed and shown to be at least an order of magnitude below the measured quantity.',
+      'The load path is calibrated against known masses, with alignment and friction effects quantified.',
+      'Actuator hysteresis and thermal steady-state continuous rating are measured, not quoted.',
+      'A structural prediction (buckling load, deflection, stress) is made before testing and compared with measurement, with the error explained.',
+      'The scaling analysis states what changes qualitatively at 2x and 5x, not just what multiplies.',
+      'The test-cell manual lets another person repeat a test safely.',
+    ],
+    learningOutcomes: [
+      'Plans and executes an instrumented subsystem test with a hazard analysis.',
+      'Runs a trade study and records the decision and rationale.',
+      'Characterises an actuator including hysteresis and thermal limits.',
+      'Validates buckling and stiffness predictions against physical measurement.',
+      'Applies scaling laws to measured data to judge a larger design.',
+    ],
+  },
+
+  /* ---------------------------------------------------------------------- */
+  /* STAGE 8 - large-scale research                                         */
+  /* ---------------------------------------------------------------------- */
+  {
+    id: 'prj-large-research',
+    name: 'Feasibility Study, Safety Case and a Reproduced Result',
+    stage: 'large-scale-research',
+    trackIds: ['large-robotics', 'systems', 'humanoid', 'ai-robotics'],
+    order: 14,
+    difficulty: 'expert',
+    description:
+      'The capstone, and the one that most resembles professional large-scale engineering. You pick a real question - "what would a 3 m, 500 kg quadruped for rough-terrain inspection require?", "is a piloted biped feasible for any real task?", "what does a human-sized humanoid need to carry a person safely?" - and answer it with a quantified feasibility study, a trade study, a safety case, and a reproduced result from published work. No hardware required. The deliverable is a document that would survive review by engineers who do this for a living.',
+    why:
+      'Institutions do not hire large-robotics engineers to build a whole machine on day one. They hire people who can bound a problem, size a subsystem, quantify the risk, and tell the truth about what is not yet possible. This project produces exactly that evidence - and it is the honest terminal point of this curriculum.',
+    requiredSkills: ['math-09', 'math-10', 'madv-06', 'lr-01', 'lr-02', 'lr-03', 'lr-04', 'lr-05', 'lr-06', 'sys-01', 'sys-05', 'sys-07', 'hum-01', 'per-06'],
+    materials: [
+      'A spreadsheet or Python environment for the calculations',
+      'Access to published data: papers, datasheets, standards summaries, conference talks',
+      'A reference manager or at least a disciplined citation list',
+      'A document tool for the report (Markdown in the repository is fine)',
+      'Optional: a simulation environment to sanity-check one subsystem',
+    ],
+    estimatedCostUsd: 0,
+    requiresHardware: false,
+    tasks: [
+      T('rs-01', 1, 60, 'Choose and bound the question', 'One sentence stating the machine, its task, its size and its operating environment. Then state explicitly what is in scope and what is out of scope. A bounded question is answerable; an open one is not.', 'rs-m1'),
+      T('rs-02', 2, 90, 'Do the scaling analysis', 'Take a real existing machine at a smaller scale and apply the square-cube law to your target size: mass, joint torque, power, energy, stiffness, ground pressure, fall energy. Show every step and every assumption.', 'rs-m1'),
+      T('rs-03', 3, 90, 'Size the critical subsystems', 'Actuators (type, torque, speed, mass, cost), structure (sections, deflection, buckling margin), power supply (capacity, mass, recharge or refuel), and control (rate, sensors, compute). Each with numbers and sources.', 'rs-m2'),
+      T('rs-04', 4, 60, 'Separate the limits', 'For every major obstacle, classify it as a physical limit, a technological limit or an economic limit, and say what would have to change for it to move. This is the discipline that keeps a feasibility study honest.', 'rs-m2'),
+      T('rs-05', 5, 75, 'Run the trade study', 'At least three architectures compared on a weighted set of criteria you define and justify. Record the sensitivity of the ranking to the weights.', 'rs-m2'),
+      T('rs-06', 6, 90, 'Build the safety case', 'Energy inventory, hazard analysis, human-contact limits where relevant, protective systems, residual risk, and the assumptions that must hold. State plainly what the machine must never be allowed to do.', 'rs-m3'),
+      T('rs-07', 7, 60, 'Cost and schedule it to order of magnitude', 'Bill of materials, custom part cost, test facility, instrumentation, people and iterations. Produce a range, not a point estimate, and identify what dominates.', 'rs-m3'),
+      T('rs-08', 8, 90, 'Reproduce one published result', 'Pick a relevant paper or well-documented system and reproduce one of its numbers or figures from first principles or in simulation. Report the difference and your best explanation for it.', 'rs-m3'),
+      T('rs-09', 9, 60, 'Identify the verification plan', 'If someone funded this, what would they build first, what would they test, and what result would kill the project? Name the cheapest experiment that could falsify your feasibility claim.', 'rs-m4'),
+      T('rs-10', 10, 45, 'Write the honest conclusion', 'Feasible, feasible with conditions, or not feasible - with the conditions or the blocking limits stated. Explicitly address the movie-scale Jaeger question if your machine is anywhere near that size, and say what is and is not achievable.', 'rs-m4'),
+      T('rs-11', 11, 60, 'Get it reviewed and revise', 'Have at least one other person (or a community forum, or an engineer you can reach) read it and list the weaknesses. Address every substantive criticism in a revision note.', 'rs-m4'),
+      T('rs-12', 12, 45, 'Publish the artefact', 'Commit the study, the calculation scripts and the data sources to a repository, tag a release, and write a short abstract. Include a statement of what you did not verify.', 'rs-m4'),
+    ],
+    milestones: [
+      M('rs-m1', 1, 'The question is bounded and scaled', 'Scope statement plus a complete scaling analysis with assumptions shown.', ['rs-01', 'rs-02']),
+      M('rs-m2', 2, 'The machine is sized and chosen', 'Subsystem numbers, limit classification, and a weighted trade study with sensitivity.', ['rs-03', 'rs-04', 'rs-05']),
+      M('rs-m3', 3, 'The risk and the cost are quantified', 'Safety case, order-of-magnitude cost and schedule, and one reproduced published result.', ['rs-06', 'rs-07', 'rs-08']),
+      M('rs-m4', 4, 'The study is reviewable and published', 'Verification plan, honest conclusion including the Jaeger question where relevant, external review addressed, artefact released.', ['rs-09', 'rs-10', 'rs-11', 'rs-12']),
+    ],
+    acceptanceCriteria: [
+      'The scaling analysis shows every step, states every assumption, and reproduces a known machine within a factor you report.',
+      'Every critical subsystem is sized with numbers and cited sources, not adjectives.',
+      'Each major obstacle is classified as physical, technological or economic, with what would have to change for it to move.',
+      'A trade study compares at least three architectures with justified weights and a sensitivity check.',
+      'The safety case includes an energy inventory, contact limits and the assumptions that must hold.',
+      'One published result is reproduced from first principles or simulation, with the difference explained.',
+      'The conclusion states feasibility with its conditions, and a named experiment that could falsify it.',
+      'At least one external review is documented, with a revision note addressing each substantive point.',
+    ],
+    learningOutcomes: [
+      'Bounds an engineering question and applies scaling laws to a target machine.',
+      'Sizes actuators, structures and power supplies with cited data.',
+      'Classifies limits as physical, technological or economic.',
+      'Constructs a safety case and an order-of-magnitude cost and schedule.',
+      'Reproduces published work and reports differences honestly.',
+      'Solicits, absorbs and responds to technical review.',
+    ],
+  },
+];
