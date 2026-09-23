@@ -36,7 +36,7 @@ const ACRONYMS = new Set([
   'hmi', 'fmea', 'mtbf', 'mbse', 'foc', 'bldc', 'esc', 'lipo', 'plc', 'vhdl', 'fpga', 'rtos',
   'swd', 'jtag', 'hal', 'sdk', 'cli', 'csv', 'yaml', 'xml', 'tcp', 'udp', 'tls', 'dns', 'ntp',
   'gnss', 'rqt', 'rosbag', 'colcon', 'ament', 'si', '3d', '2d', 'dof', 'ac', 'dc', 'rms', 'mcu',
-  'rc', 'stl', 'step', 'obj', 'dxf', '3mf', 'fea', 'gd', 't',
+  'rc', 'stl', 'obj', 'dxf', '3mf', 'fea', 'gd', 't',
 ]);
 
 const SPECIAL: Record<string, string> = {

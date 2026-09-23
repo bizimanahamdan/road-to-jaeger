@@ -1,4 +1,4 @@
-import { R, X, lesson, mcq, numeric, short } from './helpers';
+import { R, X, lesson, mcq, numeric } from './helpers';
 import type { Lesson } from '@/lib/types';
 
 /**
