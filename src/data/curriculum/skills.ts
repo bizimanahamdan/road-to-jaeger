@@ -13,7 +13,7 @@ import type { Skill } from '@/lib/types';
  * Regenerate after authoring lessons with:
  *   REGEN_SKILLS=1 npx vitest run tests/skills-sync.test.ts
  *
- * 458 skills across 11 tracks.
+ * 486 skills across 12 tracks.
  */
 export const SKILLS: Skill[] = [
   // Foundation
@@ -1486,7 +1486,7 @@ export const SKILLS: Skill[] = [
     name: 'Load paths',
     trackId: 'mechanical',
     description: 'Design mounting points that spread load and avoid stress concentration.',
-    requiredLessons: ['mech-08'],
+    requiredLessons: ['mech-08', 'lr-03'],
   },
   {
     id: 'stability-design',
@@ -3242,6 +3242,204 @@ export const SKILLS: Skill[] = [
     trackId: 'systems',
     description: 'Report a result with its conditions, uncertainty, limitations and negative findings.',
     requiredLessons: ['sys-07'],
+  },
+
+  // Large Robotics
+  {
+    id: 'square-cube-law',
+    name: 'Square-cube law',
+    trackId: 'large-robotics',
+    description: 'Apply the square-cube law to mass, cross-section and stress when a design is scaled.',
+    requiredLessons: ['lr-01'],
+  },
+  {
+    id: 'scaling-of-torque',
+    name: 'Torque scaling (k^4)',
+    trackId: 'large-robotics',
+    description: 'Derive how joint torque, power and impact energy scale with size.',
+    requiredLessons: ['lr-01'],
+  },
+  {
+    id: 'scaling-of-energy',
+    name: 'Energy scaling (k^4)',
+    trackId: 'large-robotics',
+    description: 'Explain why a scaled-up design must change geometry and material, not only dimensions.',
+    requiredLessons: ['lr-01'],
+  },
+  {
+    id: 'scale-driven-design',
+    name: 'Scale-driven design',
+    trackId: 'large-robotics',
+    description: 'Compute the scaling consequences for a specific machine and identify the binding constraint.',
+    requiredLessons: ['lr-01'],
+  },
+  {
+    id: 'hydraulic-actuation',
+    name: 'Hydraulic actuation',
+    trackId: 'large-robotics',
+    description: 'Compare hydraulic and electric actuation by power density, efficiency, control, cost and maintenance.',
+    requiredLessons: ['lr-02'],
+  },
+  {
+    id: 'electric-actuation-at-scale',
+    name: 'Electric actuation at scale',
+    trackId: 'large-robotics',
+    description: 'Compute hydraulic force, speed and power from pressure and flow.',
+    requiredLessons: ['lr-02'],
+  },
+  {
+    id: 'power-density',
+    name: 'Power density',
+    trackId: 'large-robotics',
+    description: 'Select an operating point on a torque-speed curve and explain the continuous versus peak distinction at scale.',
+    requiredLessons: ['lr-02'],
+  },
+  {
+    id: 'energy-supply-arithmetic',
+    name: 'Energy supply arithmetic',
+    trackId: 'large-robotics',
+    description: 'Perform energy-supply arithmetic: capacity, power, mass and runtime.',
+    requiredLessons: ['lr-02'],
+  },
+  {
+    id: 'thermal-management',
+    name: 'Thermal management',
+    trackId: 'large-robotics',
+    description: 'Explain why thermal management becomes a designed subsystem rather than a consequence.',
+    requiredLessons: ['lr-02'],
+  },
+  {
+    id: 'stiffness-design',
+    name: 'Stiffness-driven design',
+    trackId: 'large-robotics',
+    description: 'Distinguish strength and stiffness, and explain why deflection usually governs large structures.',
+    requiredLessons: ['lr-03'],
+  },
+  {
+    id: 'buckling-analysis',
+    name: 'Buckling analysis',
+    trackId: 'large-robotics',
+    description: 'Compute how deflection scales with size and what that does to accuracy and control.',
+    requiredLessons: ['lr-03'],
+  },
+  {
+    id: 'fatigue-design',
+    name: 'Fatigue design',
+    trackId: 'large-robotics',
+    description: 'Apply Euler buckling to a slender leg member and explain why it fails without warning.',
+    requiredLessons: ['lr-03'],
+  },
+  {
+    id: 'fracture-critical-members',
+    name: 'Fracture-critical members',
+    trackId: 'large-robotics',
+    description: 'Define load paths, redundancy and fracture-critical members, and justify each choice.',
+    requiredLessons: ['lr-03'],
+  },
+  {
+    id: 'energy-hazard-analysis',
+    name: 'Energy hazard analysis',
+    trackId: 'large-robotics',
+    description: 'Compute the kinetic, potential and hydraulic stored energy of a large machine and interpret it.',
+    requiredLessons: ['lr-04'],
+  },
+  {
+    id: 'human-contact-limits',
+    name: 'Human contact limits',
+    trackId: 'large-robotics',
+    description: 'Explain force, pressure and speed limits for human contact and where they come from.',
+    requiredLessons: ['lr-04'],
+  },
+  {
+    id: 'protective-systems',
+    name: 'Protective systems',
+    trackId: 'large-robotics',
+    description: 'Design protective systems: guards, interlocks, e-stops, energy limitation and safe states.',
+    requiredLessons: ['lr-04'],
+  },
+  {
+    id: 'energy-isolation',
+    name: 'Energy isolation and lockout',
+    trackId: 'large-robotics',
+    description: 'Apply energy isolation and lockout practice for maintenance work.',
+    requiredLessons: ['lr-04'],
+  },
+  {
+    id: 'safety-case',
+    name: 'Safety case construction',
+    trackId: 'large-robotics',
+    description: 'Identify the relevant standards families and explain what a safety case must contain.',
+    requiredLessons: ['lr-04'],
+  },
+  {
+    id: 'programme-cost-drivers',
+    name: 'Programme cost drivers',
+    trackId: 'large-robotics',
+    description: 'Identify the cost drivers of a large robot programme and explain why cost grows faster than mass.',
+    requiredLessons: ['lr-05'],
+  },
+  {
+    id: 'discipline-interfaces',
+    name: 'Cross-discipline interfaces',
+    trackId: 'large-robotics',
+    description: 'Describe the disciplines involved and the interfaces between them that require coordination.',
+    requiredLessons: ['lr-05'],
+  },
+  {
+    id: 'lead-time-planning',
+    name: 'Lead-time planning',
+    trackId: 'large-robotics',
+    description: 'Explain the role of lead times, single-source parts and test facilities in setting schedule.',
+    requiredLessons: ['lr-05'],
+  },
+  {
+    id: 'demo-vs-deployment',
+    name: 'Demo versus deployment',
+    trackId: 'large-robotics',
+    description: 'Analyse why demonstrations and deployments differ, and what evidence distinguishes them.',
+    requiredLessons: ['lr-05'],
+  },
+  {
+    id: 'individual-contribution',
+    name: 'Individual contribution scoping',
+    trackId: 'large-robotics',
+    description: 'Define concrete, finishable ways for an individual to contribute to large-scale robotics.',
+    requiredLessons: ['lr-05'],
+  },
+  {
+    id: 'large-robotics-applications',
+    name: 'Large-robotics applications',
+    trackId: 'large-robotics',
+    description: 'Identify the application areas where large-scale robotics is genuinely used or researched today.',
+    requiredLessons: ['lr-06'],
+  },
+  {
+    id: 'open-problems',
+    name: 'Frontier open problems',
+    trackId: 'large-robotics',
+    description: 'State the open problems that define the frontier and why each is hard.',
+    requiredLessons: ['lr-06'],
+  },
+  {
+    id: 'mech-feasibility-analysis',
+    name: 'Mech feasibility analysis',
+    trackId: 'large-robotics',
+    description: 'Compute the mass, torque, power and energy requirements of a movie-scale mech and interpret the result.',
+    requiredLessons: ['lr-06'],
+  },
+  {
+    id: 'physical-vs-technological-limits',
+    name: 'Physical versus technological limits',
+    trackId: 'large-robotics',
+    description: 'Explain precisely which limits are physical, which are technological, and which are economic.',
+    requiredLessons: ['lr-06'],
+  },
+  {
+    id: 'career-progression',
+    name: 'Engineering progression planning',
+    trackId: 'large-robotics',
+    description: 'Define a realistic personal progression and the standard of work each step requires.',
+    requiredLessons: ['lr-06'],
   },
 
 ];
