@@ -13,7 +13,7 @@ import type { Skill } from '@/lib/types';
  * Regenerate after authoring lessons with:
  *   REGEN_SKILLS=1 npx vitest run tests/skills-sync.test.ts
  *
- * 291 skills across 8 tracks.
+ * 315 skills across 8 tracks.
  */
 export const SKILLS: Skill[] = [
   // Foundation
@@ -2067,6 +2067,174 @@ export const SKILLS: Skill[] = [
     trackId: 'robotics',
     description: 'Design a sim-to-real transfer process with explicit verification steps.',
     requiredLessons: ['rob-08'],
+  },
+  {
+    id: 'ros2-graph',
+    name: 'ROS 2 graph model',
+    trackId: 'robotics',
+    description: 'Explain the decomposition problem middleware solves and what it costs.',
+    requiredLessons: ['ros-01'],
+  },
+  {
+    id: 'node-decomposition',
+    name: 'Node decomposition',
+    trackId: 'robotics',
+    description: 'Define nodes, topics, publishers and subscribers and draw the resulting graph.',
+    requiredLessons: ['ros-01'],
+  },
+  {
+    id: 'dds-middleware',
+    name: 'DDS middleware',
+    trackId: 'robotics',
+    description: 'Compare ROS 2 with ROS 1 and explain why DDS replaced the central master.',
+    requiredLessons: ['ros-01'],
+  },
+  {
+    id: 'single-writer-topics',
+    name: 'Single-writer topics',
+    trackId: 'robotics',
+    description: 'Decide when a robot project should use ROS 2 and when it should not.',
+    requiredLessons: ['ros-01'],
+  },
+  {
+    id: 'ros2-messages',
+    name: 'ROS 2 message types',
+    trackId: 'robotics',
+    description: 'Use the standard message packages correctly and choose between them and a custom type.',
+    requiredLessons: ['ros-02'],
+  },
+  {
+    id: 'qos-profiles',
+    name: 'QoS profiles',
+    trackId: 'robotics',
+    description: 'Explain header, timestamp and frame_id discipline in every message.',
+    requiredLessons: ['ros-02'],
+  },
+  {
+    id: 'timestamp-discipline',
+    name: 'Timestamp discipline',
+    trackId: 'robotics',
+    description: 'Configure reliability, durability, history and depth and explain each trade-off.',
+    requiredLessons: ['ros-02'],
+  },
+  {
+    id: 'bandwidth-budgeting',
+    name: 'Bandwidth budgeting',
+    trackId: 'robotics',
+    description: 'Diagnose an incompatible-QoS connection failure.',
+    requiredLessons: ['ros-02'],
+  },
+  {
+    id: 'ros2-services',
+    name: 'ROS 2 services',
+    trackId: 'robotics',
+    description: 'Choose between topics, services and actions for a given interaction.',
+    requiredLessons: ['ros-03'],
+  },
+  {
+    id: 'ros2-actions',
+    name: 'ROS 2 actions',
+    trackId: 'robotics',
+    description: 'Implement a service server and client and explain why services block.',
+    requiredLessons: ['ros-03'],
+  },
+  {
+    id: 'executor-threading',
+    name: 'Executor threading',
+    trackId: 'robotics',
+    description: 'Use the action interface: goal acceptance, feedback, result and cancellation.',
+    requiredLessons: ['ros-03'],
+  },
+  {
+    id: 'callback-groups',
+    name: 'Callback groups',
+    trackId: 'robotics',
+    description: 'Explain the executor model and how callback groups affect concurrency.',
+    requiredLessons: ['ros-03'],
+  },
+  {
+    id: 'tf2-frames',
+    name: 'TF2 frame tree',
+    trackId: 'robotics',
+    description: 'Structure a transform tree with map, odom, base and sensor frames and explain each frame\'s role.',
+    requiredLessons: ['ros-04'],
+  },
+  {
+    id: 'transform-lookups',
+    name: 'Timestamped transform lookups',
+    trackId: 'robotics',
+    description: 'Publish static and dynamic transforms correctly, with exactly one parent per frame.',
+    requiredLessons: ['ros-04'],
+  },
+  {
+    id: 'tf2-debugging',
+    name: 'TF2 debugging',
+    trackId: 'robotics',
+    description: 'Look up a transform at a specific timestamp and explain why interpolation matters.',
+    requiredLessons: ['ros-04'],
+  },
+  {
+    id: 'sensor-calibration',
+    name: 'Sensor calibration',
+    trackId: 'robotics',
+    description: 'Diagnose extrapolation, missing-frame and multiple-parent TF2 errors.',
+    requiredLessons: ['ros-04'],
+  },
+  {
+    id: 'ros2-parameters',
+    name: 'ROS 2 parameters',
+    trackId: 'robotics',
+    description: 'Declare, type and validate parameters, and handle changes at runtime safely.',
+    requiredLessons: ['ros-05'],
+  },
+  {
+    id: 'lifecycle-nodes',
+    name: 'Lifecycle nodes',
+    trackId: 'robotics',
+    description: 'Use lifecycle nodes to control startup ordering and reject work in the wrong state.',
+    requiredLessons: ['ros-05'],
+  },
+  {
+    id: 'launch-composition',
+    name: 'Launch composition',
+    trackId: 'robotics',
+    description: 'Compose a system with launch files, arguments and namespaces.',
+    requiredLessons: ['ros-05'],
+  },
+  {
+    id: 'realtime-jitter',
+    name: 'Real-time jitter control',
+    trackId: 'robotics',
+    description: 'Identify the sources of non-determinism in a middleware-based control loop.',
+    requiredLessons: ['ros-05'],
+  },
+  {
+    id: 'ros2-cli-debugging',
+    name: 'ROS 2 CLI debugging',
+    trackId: 'robotics',
+    description: 'Use the ROS 2 CLI to inspect a live graph: nodes, topics, rates, bandwidth and services.',
+    requiredLessons: ['ros-06'],
+  },
+  {
+    id: 'bag-recording',
+    name: 'Bag recording and replay',
+    trackId: 'robotics',
+    description: 'Record and replay bags so a failure can be reproduced offline.',
+    requiredLessons: ['ros-06'],
+  },
+  {
+    id: 'signal-plotting',
+    name: 'Signal plotting',
+    trackId: 'robotics',
+    description: 'Plot and visualise signals to find a fault rather than reading numbers.',
+    requiredLessons: ['ros-06'],
+  },
+  {
+    id: 'robot-regression-tests',
+    name: 'Robot regression testing',
+    trackId: 'robotics',
+    description: 'Structure logging so a field failure can be reconstructed afterwards.',
+    requiredLessons: ['ros-06'],
   },
 
 ];
