@@ -1,16 +1,19 @@
 import type { Skill } from '@/lib/types';
 
 /**
- * The skill register.
+ * The skill register - derived from the curriculum, not hand-maintained.
  *
  * A skill is not a badge for finishing a lesson. It unlocks only when every
- * lesson in `requiredLessons` reaches MASTERED, and MASTERED requires a passed
- * assessment, the required exercises and a written reflection. Each description
- * is the capability the learner must actually demonstrate, taken from the
+ * lesson in `requiredLessons` reaches MASTERED, and MASTERED itself requires a
+ * passed assessment, the required exercises and a written reflection. Each
+ * description is the capability the learner must demonstrate, taken from the
  * objectives of the granting lesson, so a skill always states something
  * checkable rather than something decorative.
  *
- * 208 skills derived from the lesson grants in src/data/curriculum/.
+ * Regenerate after authoring lessons with:
+ *   REGEN_SKILLS=1 npx vitest run tests/skills-sync.test.ts
+ *
+ * 228 skills across 6 tracks.
  */
 export const SKILLS: Skill[] = [
   // Foundation
@@ -1477,6 +1480,148 @@ export const SKILLS: Skill[] = [
     trackId: 'mechanical',
     description: 'Compensate dimensions for a known process and verify with test coupons.',
     requiredLessons: ['mech-10'],
+  },
+
+  // CAD
+  {
+    id: 'cad-setup',
+    name: 'CAD setup',
+    trackId: 'cad',
+    description: 'Set up a CAD environment and navigate views, sketch planes and the feature tree.',
+    requiredLessons: ['cad-01'],
+  },
+  {
+    id: 'sketch-constraints',
+    name: 'Sketch constraints',
+    trackId: 'cad',
+    description: 'Fully constrain a sketch and explain what degrees of freedom remain when you do not.',
+    requiredLessons: ['cad-01'],
+  },
+  {
+    id: 'parametric-design',
+    name: 'Parametric design',
+    trackId: 'cad',
+    description: 'Use dimensions as named parameters that drive geometry.',
+    requiredLessons: ['cad-01'],
+  },
+  {
+    id: 'design-intent',
+    name: 'Design intent',
+    trackId: 'cad',
+    description: 'Explain feature history and design intent, and predict what a change will break.',
+    requiredLessons: ['cad-01'],
+  },
+  {
+    id: 'cad-features',
+    name: 'CAD feature modelling',
+    trackId: 'cad',
+    description: 'Choose between extrude, revolve, sweep and loft for a given geometry.',
+    requiredLessons: ['cad-02'],
+  },
+  {
+    id: 'cad-holes',
+    name: 'Holes and threads',
+    trackId: 'cad',
+    description: 'Model holes, threads and clearance features correctly for a stated fastener.',
+    requiredLessons: ['cad-02'],
+  },
+  {
+    id: 'cad-patterns',
+    name: 'Patterns and mirroring',
+    trackId: 'cad',
+    description: 'Use patterns, mirrors and symmetry to reduce feature count and edit cost.',
+    requiredLessons: ['cad-02'],
+  },
+  {
+    id: 'cad-robustness',
+    name: 'Rebuild robustness',
+    trackId: 'cad',
+    description: 'Apply fillets and chamfers with a strategy that survives model changes.',
+    requiredLessons: ['cad-02'],
+  },
+  {
+    id: 'cad-assembly',
+    name: 'CAD assembly',
+    trackId: 'cad',
+    description: 'Apply mates/joints and explain each one as a removal of degrees of freedom.',
+    requiredLessons: ['cad-03'],
+  },
+  {
+    id: 'mates-joints',
+    name: 'Mates and joints',
+    trackId: 'cad',
+    description: 'Count the remaining DOF of a mated part and identify an under-constrained assembly.',
+    requiredLessons: ['cad-03'],
+  },
+  {
+    id: 'interference-checking',
+    name: 'Interference checking',
+    trackId: 'cad',
+    description: 'Run and interpret an interference check, and distinguish interference from intended clearance.',
+    requiredLessons: ['cad-03'],
+  },
+  {
+    id: 'top-down-design',
+    name: 'Top-down design',
+    trackId: 'cad',
+    description: 'Structure an assembly into sub-assemblies that match the real build sequence.',
+    requiredLessons: ['cad-03'],
+  },
+  {
+    id: 'technical-drawings',
+    name: 'Technical drawings',
+    trackId: 'cad',
+    description: 'Produce a drawing with the standard views and section views needed to fully define a part.',
+    requiredLessons: ['cad-04'],
+  },
+  {
+    id: 'dimensioning',
+    name: 'Dimensioning',
+    trackId: 'cad',
+    description: 'Dimension a part completely without redundancy, choosing datums deliberately.',
+    requiredLessons: ['cad-04'],
+  },
+  {
+    id: 'gd-t-basics',
+    name: 'GD&T basics',
+    trackId: 'cad',
+    description: 'Annotate fits, limits and general tolerances appropriately to the process.',
+    requiredLessons: ['cad-04'],
+  },
+  {
+    id: 'tolerance-annotation',
+    name: 'Tolerance annotation',
+    trackId: 'cad',
+    description: 'Read and apply basic geometric tolerances: flatness, perpendicularity and position.',
+    requiredLessons: ['cad-04'],
+  },
+  {
+    id: 'mass-properties',
+    name: 'Mass properties',
+    trackId: 'cad',
+    description: 'Extract mass, centre of mass and inertia from a model and explain why they matter for control.',
+    requiredLessons: ['cad-05'],
+  },
+  {
+    id: 'simulation-meshes',
+    name: 'Simulation meshes',
+    trackId: 'cad',
+    description: 'Assign correct materials and densities, and validate model mass against a physical part.',
+    requiredLessons: ['cad-05'],
+  },
+  {
+    id: 'cad-export',
+    name: 'CAD export formats',
+    trackId: 'cad',
+    description: 'Produce simplified collision and visual meshes for simulation and URDF.',
+    requiredLessons: ['cad-05'],
+  },
+  {
+    id: 'design-version-control',
+    name: 'Design version control',
+    trackId: 'cad',
+    description: 'Choose and export the right file format for printing, CAM and simulation.',
+    requiredLessons: ['cad-05'],
   },
 
 ];
