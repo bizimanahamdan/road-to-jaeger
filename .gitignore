@@ -1,0 +1,43 @@
+# dependencies
+/node_modules
+.pnp
+.pnp.js
+
+# next.js
+/.next/
+/out/
+next-env.d.ts
+
+# production
+/build
+/dist
+
+# capacitor / android build artifacts (project files ARE committed, build outputs are not)
+/android/.gradle
+/android/build
+/android/app/build
+/android/capacitor-cordova-android-plugins/build
+/android/local.properties
+/android/.idea
+/android/app/src/main/assets/public
+/android/app/capacitor.build.gradle
+/android/capacitor.settings.gradle
+*.keystore
+!debug.keystore
+
+# misc
+.DS_Store
+*.pem
+*.tsbuildinfo
+/coverage
+/.turbo
+
+# env - never commit real credentials
+.env
+.env*.local
+.env.production
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
