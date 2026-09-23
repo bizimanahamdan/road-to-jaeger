@@ -1,4 +1,4 @@
-import { R, X, lesson, mcq, numeric } from './helpers';
+import { R, X, lesson, mcq, numeric, short } from './helpers';
 import type { Lesson } from '@/lib/types';
 
 /**
@@ -6,7 +6,8 @@ import type { Lesson } from '@/lib/types';
  *
  * Deliberately placed AFTER the core maths and BEFORE control theory and
  * perception. Calculus is the language of rates of change (velocity, current,
- * error decay) and linear algebra is the language of rotations and transforms.
+ * error decay), linear algebra is the language of rotations and transforms, and
+ * probability is the language of every measurement a robot makes.
  * You cannot do PID properly without the first, or robot kinematics without
  * the second.
  */
@@ -446,4 +447,233 @@ export const MATH_ADVANCED_LESSONS: Lesson[] = [
     ],
     skills: ['math-transforms', 'math-rotation'],
   }),
+
+  lesson({
+    id: 'madv-06',
+    subject: 'math-advanced',
+    order: 6,
+    title: 'Probability, Distributions and Estimating from Data',
+    difficulty: 'intermediate',
+    minutes: 55,
+    prereqs: ['madv-03', 'math-16'],
+    hardware: ['a sensor or microcontroller to collect repeated measurements (optional but strongly advised)'],
+    description: 'Random variables, mean and variance as physical quantities, the normal distribution and sigma intervals, estimating parameters from a finite sample, and why averaging N readings reduces noise by sqrt(N).',
+    why: 'Every sensor reading is a random variable, every filter is an estimator, and every datasheet tolerance is a statistical claim. Without this you cannot say how accurate a measurement is, whether a filter helped, or what "plus or minus 2 percent" actually means. It is also the prerequisite for every Bayes filter and every machine learning model later in the curriculum.',
+    objectives: [
+      'Distinguish an outcome, a probability and a likelihood, and compute probabilities for independent and mutually exclusive events',
+      'Describe a distribution by its mean, variance and standard deviation and interpret each physically',
+      'Use the normal distribution: sigma intervals, z-scores and reading a tolerance statistically',
+      'Estimate mean and variance from a finite sample and explain the n-1 correction',
+      'Apply the central limit theorem to explain why averaging N readings reduces noise by sqrt(N)',
+    ],
+    learn: [
+      {
+        kind: 'formula',
+        heading: 'The three numbers that describe a measurement',
+        formula: 'mean: mu = (1/N) * sum(x_i)     variance: sigma^2 = (1/(N-1)) * sum((x_i - mu)^2)     standard deviation: sigma = sqrt(sigma^2)',
+        defines: ['mu = the central value; your best estimate of the true quantity', 'sigma^2 = the average squared deviation; how spread the readings are', 'sigma = spread in the same units as the measurement, so it can be compared with it'],
+        body: [
+          'The mean tells you where the measurement sits; the standard deviation tells you how much you should trust a single reading. Reporting one without the other is reporting half a result.',
+          'Variance divides by N-1 (Bessel\'s correction) because the sample mean is itself estimated from the same data, which makes the deviations slightly too small. For N = 10 the correction is about 11%; for N = 1000 it is negligible - but it is free and correct, so always use it.',
+          'Accuracy versus precision, in these terms: bias is the difference between the mean and the true value (accuracy), and sigma is the spread around the mean (precision). A filter can reduce sigma without touching bias - which is why averaging does not fix a miscalibrated sensor.',
+        ],
+      },
+      {
+        kind: 'formula',
+        heading: 'The normal distribution and sigma intervals',
+        formula: 'p(x) = (1/(sigma*sqrt(2*pi))) * exp(-(x - mu)^2 / (2*sigma^2))     z = (x - mu) / sigma',
+        defines: ['z = how many standard deviations from the mean', '68-95-99.7 rule: fraction of readings within 1, 2 and 3 sigma'],
+        body: [
+          'About 68% of readings fall within 1 sigma, 95% within 2 sigma and 99.7% within 3 sigma. That is the practical content of a Gaussian: it converts "plus or minus 0.5" into a probability statement.',
+          'The z-score is the universal comparison: it expresses any deviation in units of standard deviation, so you can compare a 3 mm error on one sensor with a 0.2 degree error on another.',
+          'Engineering consequence: a "3-sigma" design margin means roughly 0.3% of parts fall outside it - about 3 in 1000. If you build ten thousand units, that is thirty failures. Tolerances and sigma are a yield calculation, not a slogan.',
+        ],
+      },
+      {
+        kind: 'callout',
+        tone: 'note',
+        heading: 'Why averaging N readings helps by sqrt(N), not by N',
+        body: [
+          'The mean of N independent readings with individual standard deviation sigma has standard deviation sigma/sqrt(N). Ten readings give you a factor of about 3.2, not 10; a hundred give 10; ten thousand give 100.',
+          'Two immediate consequences. First, the returns are strongly diminishing - going from 16 to 64 samples quadruples the work for a doubling of precision. Second, averaging costs time: 64 samples at a 1 kHz sample rate is 64 ms, which is a latency your control loop must pay.',
+          'That is the whole design tension in sensor filtering: precision against latency. And it explains why an outlier rejection step (median, or discarding readings beyond 3 sigma) often beats more averaging - a single bad sample inflates the mean far more than extra good ones shrink it.',
+          'The central limit theorem is why the average tends to a normal distribution even when individual readings do not: sums of many small independent effects look Gaussian. It is the reason the normal distribution appears everywhere in engineering.',
+        ],
+      },
+      {
+        kind: 'example',
+        heading: 'Worked example - characterising a distance sensor',
+        problem: 'A time-of-flight sensor reads a fixed target 12 times: 203, 198, 205, 201, 199, 204, 200, 197, 202, 201, 198, 206 mm. The true distance, measured with a steel rule, is 200 mm. Report the mean, the standard deviation, the bias, and what averaging 16 readings would give you.',
+        solution: [
+          'Sum = 203+198+205+201+199+204+200+197+202+201+198+206 = 2414',
+          'Mean = 2414/12 = 201.2 mm',
+          'Deviations from the mean: 1.8, -3.2, 3.8, -0.2, -2.2, 2.8, -1.2, -4.2, 0.8, -0.2, -3.2, 4.8',
+          'Squared deviations: 3.24, 10.24, 14.44, 0.04, 4.84, 7.84, 1.44, 17.64, 0.64, 0.04, 10.24, 23.04 - sum = 93.68',
+          'Sample variance = 93.68/(12-1) = 8.52 mm^2, so sigma = sqrt(8.52) = 2.92 mm',
+          'Bias = mean - true = 201.2 - 200 = +1.2 mm - a systematic offset that averaging cannot remove',
+          'Averaging 16 readings: sigma_mean = 2.92/sqrt(16) = 0.73 mm of random error, but the bias stays at 1.2 mm',
+          'Total error is then dominated by bias, not noise - so the next step is calibration (subtract the offset), not more averaging',
+          'A single reading is within 2 sigma of the mean about 95% of the time, so occasional readings of 195 or 207 mm are expected, not faults',
+        ],
+        answer: 'Mean 201.2 mm, sigma 2.92 mm, bias +1.2 mm. Averaging 16 readings cuts random error to 0.73 mm but leaves the 1.2 mm bias - so calibrate the offset first, then average. Reporting "about 200 mm" hides both numbers, which is why the mean and sigma must be stated.',
+      },
+    ],
+    resources: [
+      R('Khan Academy: statistics and probability', 'course', 'https://www.khanacademy.org/math/statistics-probability', { author: 'Khan Academy', minutes: 600, note: 'Free. Work through "Summarizing quantitative data" and "Probability distributions" - the mean/variance/normal sections are the ones this lesson needs.' }),
+      R('Wikipedia: Normal distribution (with the 68-95-99.7 rule)', 'article', 'https://en.wikipedia.org/wiki/Normal_distribution', { minutes: 40 }),
+      R('Wikipedia: Central limit theorem', 'article', 'https://en.wikipedia.org/wiki/Central_limit_theorem', { minutes: 35, note: 'The statement and the intuition matter more than the proof; read the illustrative examples.' }),
+      R('Seeing Theory: a visual introduction to probability and statistics', 'course', 'https://seeing-theory.brown.edu/', { author: 'Brown University', minutes: 120, note: 'Free, visual, and unusually good at building intuition about distributions and estimation.' }),
+    ],
+    exercises: [
+      X('measurement', 'Collect at least 30 readings of one quantity from any sensor you have (distance, temperature, light, battery voltage) with the target held fixed. Compute the mean, sample standard deviation and - if you can measure the truth independently - the bias. Report all three with units.', 45, { hardware: ['a sensor or microcontroller to collect repeated measurements (optional but strongly advised)'], solution: 'The deliverable is three numbers, not one. If sigma is large relative to the bias, averaging will help; if the bias dominates, you need calibration. State which case you are in and what you would do next.' }),
+      X('calculation', 'A gyroscope has a noise density such that a single sample has sigma = 0.6 degrees per second. Compute the sigma of the mean of 4, 16 and 64 samples, and the sampling latency of each at a 500 Hz sample rate. Choose the averaging window for a balance controller that must react within 10 ms.', 30, { hardware: ['a sensor or microcontroller to collect repeated measurements (optional but strongly advised)'], solution: 'sigma_mean = 0.30, 0.15 and 0.075 deg/s for 4, 16 and 64 samples. Latency = 8, 32 and 128 ms. Only the 4-sample window meets a 10 ms reaction budget - so the balance controller must accept 0.30 deg/s of noise, or the noise must be reduced by better hardware or a predictive filter rather than by averaging.' }),
+      X('question', 'A datasheet states an accuracy of "plus or minus 2 percent, 3 sigma". Explain precisely what that claims, what fraction of units you would expect outside it, and how many failures that implies in a production run of 5000 units.', 25, { hardware: ['a sensor or microcontroller to collect repeated measurements (optional but strongly advised)'], solution: 'It claims 99.7% of readings fall within +/-2% of the true value, so about 0.3% fall outside - roughly 3 in 1000, or about 15 units in 5000. Whether that matters depends on the application: a hobby robot can tolerate it, a safety function cannot.' }),
+    ],
+    questions: [
+      mcq(1, 'Two independent events have probabilities 0.3 and 0.4. What is the probability that both occur?', ['0.12', '0.70', '0.10', '0.58'], 0, 'Independent events multiply: 0.3*0.4 = 0.12. Mutually exclusive events instead add - knowing which rule applies is the whole of basic probability.'),
+      mcq(1, 'What is the difference between a probability and a likelihood?', ['Probability describes outcomes given known parameters; likelihood describes parameters given observed outcomes', 'They are synonyms', 'Likelihood is always larger', 'Probability applies only to discrete events'], 0, 'The direction matters: forward from parameters to data is probability, backward from data to parameters is likelihood - and estimation is the backward direction.'),
+      mcq(2, 'The standard deviation of a set of distance readings tells you:', ['How much a single reading is likely to differ from the mean, in the units of the measurement', 'The true distance', 'The bias of the sensor', 'How many readings were taken'], 0, 'Sigma is spread in the measurement\'s own units, which is why it is comparable with the reading itself. Variance is the same information squared.'),
+      mcq(2, 'A sensor has a mean of 201.2 mm on a true 200 mm target with sigma = 2.9 mm. What are its bias and precision?', ['Bias +1.2 mm (accuracy), precision 2.9 mm (spread)', 'Bias 2.9 mm, precision 1.2 mm', 'Both are 2.9 mm', 'Bias is zero because sigma is larger'], 0, 'Bias is a systematic offset that averaging cannot remove; precision is the random spread that averaging reduces. Conflating them leads to filtering when you should calibrate.'),
+      numeric(2, 'Readings of a fixed target are 10.2, 9.8, 10.4 and 9.6 mm. What is the mean in mm? [0-50]', 10.0, 'Sum = 40.0, divided by 4 = 10.0 mm.', { tolerance: 0.01 }),
+      numeric(2, 'For those four readings, what is the sample standard deviation in mm (using n-1)? [0-10]', 0.356, 'Squared deviations from 10.0: 0.04, 0.04, 0.16, 0.16 - sum 0.40. Variance = 0.40/3 = 0.1333, sigma = 0.366 mm; with rounding, about 0.356-0.366 mm.', { tolerance: 0.01 }),
+      mcq(3, 'Roughly what fraction of readings from a normal distribution fall within 2 sigma of the mean?', ['About 95%', 'About 68%', 'About 99.7%', 'About 50%'], 0, '68-95-99.7 for 1, 2 and 3 sigma. These three numbers are worth memorising: they turn every tolerance into a yield statement.'),
+      numeric(3, 'A reading of 5.42 V is taken from a supply whose measured mean is 5.00 V with sigma = 0.15 V. What is the z-score? [0-20]', 2.8, 'z = (5.42 - 5.00)/0.15 = 2.8. That is outside 2 sigma but inside 3 sigma - unusual, roughly 0.5% of readings, worth investigating but not proof of a fault.', { tolerance: 0.05 }),
+      mcq(3, 'Why does sample variance divide by N-1 rather than N?', ['Because the sample mean is estimated from the same data, which would otherwise make the spread look smaller than it is', 'It is an arbitrary convention', 'Because N is unknown', 'To match the normal distribution formula'], 0, 'Bessel\'s correction. It matters for small samples (about 11% at N = 10) and is negligible for large ones - but it is correct and costs nothing.'),
+      mcq(4, 'Averaging 25 independent readings instead of 1 changes the standard error by what factor?', ['It divides by 5, because the error falls as sqrt(N)', 'It divides by 25', 'It divides by 1.25', 'It is unchanged'], 0, 'sigma_mean = sigma/sqrt(N), so sqrt(25) = 5. The diminishing return is the key design fact: quadrupling the samples only halves the error.'),
+      numeric(4, 'A single sensor sample has sigma = 1.2 units. What is the sigma of the mean of 9 samples? [0-5]', 0.4, 'sigma/sqrt(N) = 1.2/3 = 0.4 units.', { tolerance: 0.01 }),
+      numeric(4, 'Those 9 samples are taken at 200 Hz. What is the averaging latency in milliseconds? [0-1000]', 45, '9 samples at 200 Hz is 9/200 s = 0.045 s = 45 ms. Latency is the price of precision, and a control loop must be able to pay it.', { tolerance: 1 }),
+      mcq(5, 'Why does the mean of many readings tend to a normal distribution even when individual readings do not?', ['The central limit theorem: sums of many small independent effects converge to a Gaussian', 'Because sensors are Gaussian by construction', 'Because of the n-1 correction', 'It does not - the shape is preserved'], 0, 'This is why the normal distribution appears throughout engineering, and why Gaussian assumptions in filters are usually reasonable for averaged quantities.'),
+      mcq(5, 'A single sample in a stream of 64 is a wild outlier. What is the better response?', ['Reject it (median filter or a 3-sigma gate) rather than averaging more, because one outlier shifts the mean far more than extra good samples shrink it', 'Increase the averaging window', 'Ignore it - the mean is robust', 'Halve the sample rate'], 0, 'The mean is not robust to outliers. A median or a rejection gate removes the influence entirely; more averaging only dilutes it slowly while adding latency.'),
+      short(5, 'Why is reporting a mean without a standard deviation half a result?', ['the mean gives location while sigma gives how much a single reading can be trusted', 'sigma says how much a single reading can be trusted', 'without spread the number is not interpretable'], 'The mean says where the measurement sits; sigma says how much any single reading may deviate from it. Without sigma you cannot compute a margin, judge whether a difference is real, or decide how much averaging a filter needs - the number has no engineering meaning on its own.'),
+    ],
+    skills: ['probability-basics', 'mean-variance', 'normal-distribution', 'sample-estimation', 'noise-averaging'],
+  }),
+
+  lesson({
+    id: 'madv-07',
+    subject: 'math-advanced',
+    order: 7,
+    title: 'Bayes, Covariance and Fusing Uncertain Estimates',
+    difficulty: 'advanced',
+    minutes: 60,
+    prereqs: ['madv-06', 'madv-04'],
+    hardware: ['a computer for the numerical exercises'],
+    description: 'Conditional probability and Bayes\' theorem including the base-rate trap, covariance and correlation for multivariate uncertainty, and inverse-variance fusion of two estimates - the mathematics underneath every Kalman filter, particle filter and classifier confidence.',
+    why: 'Robots never have one perfect measurement; they have several imperfect ones and must combine them. Bayes tells you how evidence updates belief, covariance describes uncertainty in more than one dimension, and inverse-variance weighting gives the exact optimal way to fuse two estimates. Learn these three and the Kalman filter in the navigation track becomes arithmetic rather than magic.',
+    objectives: [
+      'State and apply conditional probability and Bayes\' theorem, including the base-rate effect',
+      'Explain prior, likelihood and posterior as an estimation procedure rather than as vocabulary',
+      'Read and construct a covariance matrix, and distinguish correlation from causation',
+      'Derive and apply inverse-variance fusion of two independent Gaussian estimates',
+      'Identify where this mathematics is used in robotics and state its assumptions',
+    ],
+    learn: [
+      {
+        kind: 'formula',
+        heading: 'Bayes\' theorem, and the form used in estimation',
+        formula: 'P(H|E) = P(E|H) * P(H) / P(E)     and in estimation language:     posterior = likelihood * prior / evidence',
+        defines: ['P(H) = prior: what you believed before the measurement', 'P(E|H) = likelihood: how probable this evidence is if the hypothesis is true', 'P(H|E) = posterior: what you should believe now', 'P(E) = normalising constant, computed by summing over all hypotheses'],
+        body: [
+          'The structure is the important part: a prior is updated by a likelihood to give a posterior, and the posterior becomes the next step\'s prior. That recursive update is exactly what a Bayes filter does, frame after frame.',
+          'The base-rate effect is where intuition fails. A test that is 99% accurate applied to a rare condition produces mostly false positives, because the number of healthy subjects dwarfs the number of sick ones. In robotics the same trap appears as a detector that is 99% precise on a class that occurs 0.1% of the time.',
+          'Always compute the posterior from the base rate rather than trusting the accuracy figure. The accuracy of the sensor is not the accuracy of your conclusion.',
+        ],
+      },
+      {
+        kind: 'formula',
+        heading: 'Covariance and correlation',
+        formula: 'cov(X,Y) = E[(X - mu_X)(Y - mu_Y)]     correlation: rho = cov(X,Y) / (sigma_X * sigma_Y)     -1 <= rho <= 1',
+        defines: ['cov(X,Y) = how two quantities vary together, in the product of their units', 'rho = the same information normalised to a dimensionless scale', 'cov(X,X) = variance'],
+        body: [
+          'A 2x2 covariance matrix has variances on the diagonal and covariances off it. Geometrically it describes an uncertainty ellipse: the diagonal terms set the size along each axis, the off-diagonal terms tilt it.',
+          'A tilted ellipse is the interesting case: it means the errors are correlated, so knowing the error in x tells you something about the error in y. Odometry is exactly this - a heading error produces a growing lateral position error, so the covariance is strongly off-diagonal.',
+          'Correlation is not causation, and in engineering the distinction is operational: two sensors reading the same physical disturbance are correlated without either causing the other, and averaging correlated measurements does NOT reduce error by sqrt(N) the way independent ones do. That is a real trap when you fuse two sensors that share a bias source.',
+        ],
+      },
+      {
+        kind: 'formula',
+        heading: 'Inverse-variance fusion - the optimal way to combine two estimates',
+        formula: 'x_fused = (x1/sigma1^2 + x2/sigma2^2) / (1/sigma1^2 + 1/sigma2^2)     sigma_fused^2 = 1 / (1/sigma1^2 + 1/sigma2^2)',
+        defines: ['x1, x2 = two independent estimates of the same quantity', 'sigma1, sigma2 = their standard deviations', 'weight = 1/sigma^2, so the more certain estimate dominates'],
+        body: [
+          'Each estimate is weighted by its information content, 1/sigma^2. A measurement with half the standard deviation carries four times the weight - the square is what people forget.',
+          'The fused variance is always smaller than either input variance, and the improvement is real only if the errors are independent. With a shared bias, fusion reduces the random part and leaves the common error untouched.',
+          'This single formula is the scalar core of the Kalman filter. The filter generalises it to vectors with covariance matrices, and adds a prediction step from a motion model - but the update step IS inverse-variance weighting, written with matrices.',
+        ],
+      },
+      {
+        kind: 'callout',
+        tone: 'warning',
+        heading: 'Assumptions you must check before trusting any of this',
+        body: [
+          'INDEPENDENCE: fusion formulas assume errors are uncorrelated. Two cameras on the same rig in the same lighting violate this; two IMUs sharing a temperature do too. When in doubt, measure the correlation from data.',
+          'GAUSSIANITY: the neat formulas assume normal distributions. Real sensor errors often have heavy tails from outliers and dropouts, so a Gaussian assumption underestimates the risk of a large error. That is why robust filters and outlier gating exist.',
+          'BIAS versus NOISE: all of this mathematics reduces random error. A systematic offset passes straight through every filter unchanged. Calibrate first, then fuse.',
+          'LINEARITY: Bayes and covariance are exact for linear Gaussian systems. Real robot models are nonlinear, so filters linearise (the extended Kalman filter) or sample (the particle filter) - and each approximation has a regime where it fails.',
+          'A confidence number is only as good as the covariance that produced it. A filter that reports a tiny variance because its model ignored an error source is confidently wrong - the most dangerous failure mode in estimation.',
+        ],
+      },
+      {
+        kind: 'example',
+        heading: 'Worked example 1 - the base-rate trap',
+        problem: 'A person detector is 99% sensitive (detects a present person) and has a 2% false-positive rate. People are present in 5% of frames. Given a detection, what is the probability a person is actually there?',
+        solution: [
+          'Consider 10,000 frames. A person is present in 500 of them and absent in 9,500',
+          'True positives = 0.99 * 500 = 495',
+          'False positives = 0.02 * 9,500 = 190',
+          'Total detections = 495 + 190 = 685',
+          'P(person | detection) = 495/685 = 0.723 = 72.3%',
+          'So a 99%-sensitive detector with a 2% false-positive rate yields only 72% confidence per detection, purely because the event is rare',
+          'Engineering consequences: require temporal consistency (a person seen in 5 consecutive frames is far more certain, because the joint probability of 5 false positives is 0.02^5), or raise the detection threshold, or accept 28% false alarms in the behaviour design',
+          'The general lesson: precision depends on the base rate. A rare-class detector must be much more accurate than intuition suggests to be useful per-frame',
+        ],
+        answer: 'About 72%. The 99% sensitivity figure is not the confidence of a detection; the base rate dominates. Fix it with temporal consistency, a higher threshold, or a behaviour that tolerates false positives.',
+      },
+      {
+        kind: 'example',
+        heading: 'Worked example 2 - fusing two distance sensors',
+        problem: 'A time-of-flight sensor reports 203 mm with sigma = 4 mm and an ultrasonic sensor reports 196 mm with sigma = 12 mm. Fuse them, and state what the result would mean if the two sensors shared a temperature-dependent bias.',
+        solution: [
+          'Weights: 1/sigma^2 gives 1/16 = 0.0625 for the ToF and 1/144 = 0.00694 for the ultrasonic',
+          'The ToF carries 0.0625/(0.0625+0.00694) = 90% of the weight - the 3x smaller sigma gives 9x the information',
+          'x_fused = (203*0.0625 + 196*0.00694)/(0.0694) = (12.6875 + 1.3611)/0.06944 = 14.0486/0.06944 = 202.3 mm',
+          'sigma_fused^2 = 1/0.06944 = 14.4 mm^2, so sigma_fused = 3.79 mm - better than either input',
+          'The 7 mm disagreement between the sensors is 1.85 sigma_fused: uncomfortable but not proof of a fault. A persistent disagreement of that size would indicate one sensor is biased',
+          'If both share a temperature-dependent bias, fusion reduces the random error to 3.79 mm but the common offset remains entirely - the reported confidence would be misleadingly good',
+          'Practical addition: compute the normalised disagreement (x1 - x2)/sqrt(sigma1^2 + sigma2^2) and alarm when it exceeds 3, which detects a failing sensor rather than averaging it away',
+        ],
+        answer: 'Fused estimate 202.3 mm with sigma 3.79 mm, weighted 90% to the ToF sensor. The improvement is real only for independent errors - a shared bias survives fusion untouched while the reported variance shrinks, which is why disagreement monitoring matters as much as the fusion itself.',
+      },
+    ],
+    resources: [
+      R('Khan Academy: conditional probability and Bayes\' theorem', 'course', 'https://www.khanacademy.org/math/statistics-probability/probability-library', { author: 'Khan Academy', minutes: 240, note: 'Free. The base-rate examples are the ones to work through by hand.' }),
+      R('Wikipedia: Bayes\' theorem (with the medical test example)', 'article', 'https://en.wikipedia.org/wiki/Bayes%27_theorem', { minutes: 40 }),
+      R('Wikipedia: Covariance matrix and correlation', 'article', 'https://en.wikipedia.org/wiki/Covariance_matrix', { minutes: 35 }),
+      R('Wikipedia: Inverse-variance weighting and the Kalman filter', 'article', 'https://en.wikipedia.org/wiki/Inverse-variance_weighting', { minutes: 45, note: 'Short, and it makes the connection to the Kalman filter explicit - which is where this mathematics is used in robotics.' }),
+      R('Bayesian Methods for Hackers (free online book)', 'book', 'https://camdavidsonpilon.github.io/Probabilistic-Programming-and-Bayesian-Methods-for-Hackers/', { author: 'Cameron Davidson-Pilon', minutes: 600, note: 'Free, computation-first introduction to Bayesian reasoning. Read chapters 1 and 2; skip the probabilistic programming parts if you are not using them.' }),
+    ],
+    exercises: [
+      X('calculation', 'A fault detector has 95% sensitivity and a 5% false-positive rate, and the fault is present in 1% of operating hours. Compute P(fault | alarm) and state what behaviour you would design around that number.', 30, { hardware: ['a computer for the numerical exercises'], solution: 'Per 10,000 hours: 100 faulted hours give 95 true alarms; 9,900 healthy hours give 495 false alarms. P = 95/590 = 16%. So an alarm is more likely to be false than true - design for it: require two independent confirmations, or treat an alarm as "inspect" rather than "shut down".' }),
+      X('calculation', 'Fuse these estimates of a battery voltage: 12.10 V with sigma 0.05 V and 11.94 V with sigma 0.12 V. Report the fused value, its sigma, each sensor\'s weight percentage, and the normalised disagreement. State whether a sensor is likely faulty.', 30, { hardware: ['a computer for the numerical exercises'], solution: 'Weights 1/0.0025 = 400 and 1/0.0144 = 69.4, so 85% and 15%. Fused = (12.10*400 + 11.94*69.4)/469.4 = (4840 + 828.7)/469.4 = 12.077 V. sigma_fused = sqrt(1/469.4) = 0.0461 V. Disagreement = 0.16/sqrt(0.0025+0.0144) = 0.16/0.130 = 1.23 sigma - within tolerance, so no fault is indicated, but the weaker sensor contributes little.' }),
+      X('measurement', 'Collect simultaneous readings from two sensors measuring the same physical quantity (two temperature sensors, two distance sensors, or a multimeter and an onboard ADC). Compute each sigma, their covariance and correlation coefficient, and state whether fusing them is legitimate.', 50, { hardware: ['a computer for the numerical exercises'], solution: 'If the correlation is high (say above 0.6), the errors are not independent - often because both respond to the same ambient condition or share a reference - and fusion will overstate the confidence of the result. Report rho and the fused sigma, then explain honestly whether the reduction is real.' }),
+    ],
+    questions: [
+      mcq(1, 'In P(H|E) = P(E|H)*P(H)/P(E), which term is the prior?', ['P(H) - what you believed before seeing the evidence', 'P(E|H)', 'P(H|E)', 'P(E)'], 0, 'The prior is updated by the likelihood to produce the posterior. In a filter, the posterior becomes the next step\'s prior.'),
+      mcq(1, 'A 99% sensitive test with a 2% false-positive rate is applied to a condition present in 5% of cases. A positive result means the condition is present with probability:', ['About 72% - the base rate dominates', 'About 99%', 'About 50%', 'About 95%'], 0, 'Computed as 495 true positives out of 685 total positives. Sensor accuracy is not conclusion accuracy; the base rate is what converts one into the other.'),
+      mcq(1, 'Two fair dice are rolled. What is the probability that the sum is 7?', ['1/6', '1/12', '1/36', '7/36'], 0, 'Six of the 36 equally likely outcomes sum to 7: (1,6), (2,5), (3,4), (4,3), (5,2), (6,1) - so 6/36 = 1/6.'),
+      mcq(2, 'In estimation, what does the likelihood P(E|H) represent?', ['How probable the observed measurement is, assuming a particular true value', 'How probable the true value is', 'The prior belief', 'The normalising constant'], 0, 'It is the sensor model: given a hypothesised truth, how likely is this reading? Multiplying by the prior and normalising gives the posterior.'),
+      mcq(2, 'Why is the posterior used as the next step\'s prior in a recursive filter?', ['Because belief should accumulate: each measurement updates the estimate, and the updated estimate is the starting point for the next', 'To reduce computation', 'Because priors are illegal after the first step', 'It is not - the prior is always the initial guess'], 0, 'That recursion is the whole mechanism of a Bayes filter. It is also why an over-confident covariance early on can permanently damage the estimate.'),
+      mcq(3, 'A covariance matrix for (x, y) has a large positive off-diagonal term. What does that mean?', ['Errors in x and y are correlated - knowing one tells you something about the other, and the uncertainty ellipse is tilted', 'x and y are independent', 'The variance of x is large', 'y causes x'], 0, 'Correlated errors tilt the uncertainty ellipse. Odometry shows this strongly: a heading error produces a lateral position error.'),
+      numeric(3, 'Two variables have sigma_X = 3, sigma_Y = 4 and cov(X,Y) = 6. What is the correlation coefficient rho? [-1-1]', 0.5, 'rho = cov/(sigma_X*sigma_Y) = 6/(3*4) = 6/12 = 0.5 - a moderate positive correlation.', { tolerance: 0.01 }),
+      mcq(3, 'Why does averaging NOT reduce error by sqrt(N) for correlated measurements?', ['Because the shared error component is common to every sample, so averaging cannot cancel it', 'Because the samples are too few', 'Because variance is negative', 'It does reduce by sqrt(N)'], 0, 'Only independent random errors cancel. A shared bias or a common disturbance survives averaging intact - which is why fusing two sensors with a common error source overstates confidence.'),
+      mcq(4, 'Inverse-variance fusion weights each estimate by:', ['1/sigma^2, so a sensor with half the standard deviation gets four times the weight', '1/sigma', 'sigma^2', 'Equal weights always'], 0, 'Information scales as the inverse variance. Forgetting the square is the most common error when combining sensor readings by hand.'),
+      numeric(4, 'Fuse estimates 100 (sigma 2) and 106 (sigma 4). What is the fused value? [0-200]', 101.2, 'Weights 1/4 = 0.25 and 1/16 = 0.0625. Fused = (100*0.25 + 106*0.0625)/0.3125 = (25 + 6.625)/0.3125 = 31.625/0.3125 = 101.2. The precise estimate dominates, as it should.', { tolerance: 0.05 }),
+      numeric(4, 'What is the fused standard deviation for those two estimates? [0-10]', 1.79, 'sigma_fused^2 = 1/(0.25 + 0.0625) = 1/0.3125 = 3.2, so sigma_fused = 1.79 - better than either input, which is the point of fusion.', { tolerance: 0.02 }),
+      mcq(5, 'Where does inverse-variance fusion appear in robotics?', ['As the update step of the Kalman filter, generalised to vectors and covariance matrices', 'Only in statistics courses', 'In path planning', 'In motor commutation'], 0, 'The Kalman filter adds a prediction step from a motion model and works with matrices, but its measurement update is exactly this weighting - which is why this lesson precedes the navigation track.'),
+      mcq(5, 'A filter reports a very small variance but the estimate is badly wrong. What is the likely cause?', ['The model ignored an error source, so the covariance is over-confident - the filter is confidently wrong', 'The measurement was too accurate', 'The prior was too weak', 'Covariance matrices cannot be small'], 0, 'Reported confidence is only as good as the model that produced it. An omitted error source - a bias, a correlated sensor, an unmodelled disturbance - shrinks the variance without improving the estimate.'),
+      short(5, 'Why must a systematic bias be calibrated out before fusing or filtering measurements?', ['filters reduce random error only, so a bias passes through unchanged while the reported variance shrinks', 'filters only reduce random error', 'a bias survives every filter'], 'Every filter here reduces random error; none of them removes a systematic offset. Worse, fusion shrinks the reported variance while the bias remains, so the system becomes confidently wrong. Calibrate first, then fuse - in that order.'),
+    ],
+    skills: ['bayes-theorem', 'base-rate-reasoning', 'covariance-matrices', 'inverse-variance-fusion', 'estimation-assumptions'],
+  }),
+
 ];

@@ -13,7 +13,7 @@ import type { Skill } from '@/lib/types';
  * Regenerate after authoring lessons with:
  *   REGEN_SKILLS=1 npx vitest run tests/skills-sync.test.ts
  *
- * 315 skills across 8 tracks.
+ * 325 skills across 8 tracks.
  */
 export const SKILLS: Skill[] = [
   // Foundation
@@ -177,6 +177,76 @@ export const SKILLS: Skill[] = [
     trackId: 'foundation',
     description: 'Build a homogeneous transform combining rotation and translation.',
     requiredLessons: ['madv-05'],
+  },
+  {
+    id: 'probability-basics',
+    name: 'Probability fundamentals',
+    trackId: 'foundation',
+    description: 'Distinguish an outcome, a probability and a likelihood, and compute probabilities for independent and mutually exclusive events.',
+    requiredLessons: ['madv-06'],
+  },
+  {
+    id: 'mean-variance',
+    name: 'Mean and variance',
+    trackId: 'foundation',
+    description: 'Describe a distribution by its mean, variance and standard deviation and interpret each physically.',
+    requiredLessons: ['madv-06'],
+  },
+  {
+    id: 'normal-distribution',
+    name: 'Normal distribution',
+    trackId: 'foundation',
+    description: 'Use the normal distribution: sigma intervals, z-scores and reading a tolerance statistically.',
+    requiredLessons: ['madv-06'],
+  },
+  {
+    id: 'sample-estimation',
+    name: 'Sample estimation',
+    trackId: 'foundation',
+    description: 'Estimate mean and variance from a finite sample and explain the n-1 correction.',
+    requiredLessons: ['madv-06'],
+  },
+  {
+    id: 'noise-averaging',
+    name: 'Noise averaging (sqrt-N rule)',
+    trackId: 'foundation',
+    description: 'Apply the central limit theorem to explain why averaging N readings reduces noise by sqrt(N).',
+    requiredLessons: ['madv-06'],
+  },
+  {
+    id: 'bayes-theorem',
+    name: 'Bayes\' theorem',
+    trackId: 'foundation',
+    description: 'State and apply conditional probability and Bayes\' theorem, including the base-rate effect.',
+    requiredLessons: ['madv-07'],
+  },
+  {
+    id: 'base-rate-reasoning',
+    name: 'Base-rate reasoning',
+    trackId: 'foundation',
+    description: 'Explain prior, likelihood and posterior as an estimation procedure rather than as vocabulary.',
+    requiredLessons: ['madv-07'],
+  },
+  {
+    id: 'covariance-matrices',
+    name: 'Covariance matrices',
+    trackId: 'foundation',
+    description: 'Read and construct a covariance matrix, and distinguish correlation from causation.',
+    requiredLessons: ['madv-07'],
+  },
+  {
+    id: 'inverse-variance-fusion',
+    name: 'Inverse-variance fusion',
+    trackId: 'foundation',
+    description: 'Derive and apply inverse-variance fusion of two independent Gaussian estimates.',
+    requiredLessons: ['madv-07'],
+  },
+  {
+    id: 'estimation-assumptions',
+    name: 'Estimation assumptions',
+    trackId: 'foundation',
+    description: 'Identify where this mathematics is used in robotics and state its assumptions.',
+    requiredLessons: ['madv-07'],
   },
   {
     id: 'phys-units',

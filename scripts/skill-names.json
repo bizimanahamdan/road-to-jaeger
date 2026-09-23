@@ -313,5 +313,15 @@
   "ros2-cli-debugging": "ROS 2 CLI debugging",
   "bag-recording": "Bag recording and replay",
   "signal-plotting": "Signal plotting",
-  "robot-regression-tests": "Robot regression testing"
+  "robot-regression-tests": "Robot regression testing",
+  "probability-basics": "Probability fundamentals",
+  "mean-variance": "Mean and variance",
+  "normal-distribution": "Normal distribution",
+  "sample-estimation": "Sample estimation",
+  "noise-averaging": "Noise averaging (sqrt-N rule)",
+  "bayes-theorem": "Bayes' theorem",
+  "base-rate-reasoning": "Base-rate reasoning",
+  "covariance-matrices": "Covariance matrices",
+  "inverse-variance-fusion": "Inverse-variance fusion",
+  "estimation-assumptions": "Estimation assumptions"
 }
