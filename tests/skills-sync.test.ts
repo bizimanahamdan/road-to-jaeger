@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { LESSONS, SKILLS, TRACKS } from '@/data/curriculum';
-import type { Lesson, Skill } from '@/lib/types';
+import type { Lesson } from '@/lib/types';
 
 /**
  * Keeps `src/data/curriculum/skills.ts` honest about the curriculum.
@@ -192,9 +192,10 @@ describe('skill register', () => {
     const expected = render(meta);
     if (process.env.REGEN_SKILLS === '1') {
       writeFileSync('src/data/curriculum/skills.ts', expected, 'utf8');
-      for (const [id, d] of meta) if (!CURATED[id]) CURATED[id] = humanize(id);
+      for (const id of meta.keys()) {
+        if (!CURATED[id]) CURATED[id] = humanize(id);
+      }
       writeFileSync('scripts/skill-names.json', `${JSON.stringify(CURATED, null, 2)}\n`, 'utf8');
-      console.log(`regenerated skills.ts with ${meta.size} skills`);
       return;
     }
     const actual = readFileSync('src/data/curriculum/skills.ts', 'utf8');
